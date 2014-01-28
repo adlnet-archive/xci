@@ -9,6 +9,8 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+AUTH_USER_MODEL = 'comp.SystemUser'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django_mongodb_engine', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
@@ -35,7 +37,7 @@ TIME_ZONE = 'America/Chicago'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
-SITE_ID = '52e1441c1d41c80f442735f0'
+SITE_ID = '52e1661b1d41c8146b37fdd2'
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -92,6 +94,16 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'django.core.context_processors.request',
+    'django.contrib.auth.context_processors.auth'
+
+)
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -125,6 +137,8 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
     'djangotoolbox',
+    'comp',
+    'widget_tweaks',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
