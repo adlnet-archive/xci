@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+	<div class="col-xs-12">
+		<div class="page-header">
+			<h1>{{request.user.username}} <small>Competencies you signed up for</small></h1>
+		</div>
+	</div>
+</div>
+<div class="row">
+	{% for comp in request.user.competencies %}
+	<div class="col-xs-12">
+		{% if comp.met %}
+			<div class="panel panel-success">
+				<div class="panel-heading">
+					<h3 class="panel-title">{{ comp.title }}</h3>
+				</div>
+				<div class="panel-body">
+					<p>{{ comp.description }}</p>
+					<p><a href="{% url 'comp.views.me_competency' comp.id %}" class="btn btn-primary btn-sm" role="button">Details</a></p>
+				</div>
+			</div>
+		{% else %}
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title">{{ comp.title }}</h3>
+				</div>
+				<div class="panel-body">
+					<p>{{ comp.description }}</p>
+					<p><a href="{% url 'comp.views.me_competency' comp.id %}" class="btn btn-primary btn-sm" role="button">Details</a></p>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+	{% empty %}
+	<div class="col-xs-12">You have no competencies yet!</div>
+	{% endfor %}
+</div>
+{% endblock %}
