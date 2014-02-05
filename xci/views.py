@@ -1,7 +1,8 @@
-from xci import app
-from flask import render_template, redirect, flash, url_for, request
+from xci import app, competency
+from flask import render_template, redirect, flash, url_for, request, make_response
 from forms import LoginForm, RegistrationForm, FrameworksForm
 from flask_login import LoginManager, login_user
+import json
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -18,9 +19,28 @@ def load_user(userid):
 
 @app.route('/', methods=['GET'])
 def index():
-    return 'yay we dids it! <br>DEBIG: %s <br>SECRET: %s' % (app.config['DEBUG'], app.config['SECRET_KEY'])
-    # return_dict = add_login_to_return_dict({})
-    # return render_template('home.html', **return_dict)
+    # return 'yay we dids it! <br>DEBIG: %s <br>SECRET: %s' % (app.config['DEBUG'], app.config['SECRET_KEY'])
+    return_dict = add_login_to_return_dict({})
+    return render_template('home.html', **return_dict)
+    # uri = request.args.get('uri', None)
+    # if uri:
+    #     p = competency.parseMedBiq(uri)
+    #     try:
+    #         resp = make_response(json.dumps(p), 200)
+    #         resp.headers['Content-Type'] = "application/json"
+    #         return resp
+    #     except Exception as e:
+    #         return make_response("%s<br>%s" % (str(e), p), 200)
+    #         # return make_response("fail <br> %s" % repr(p), 200)
+
+    # return '''yay we dids it! 
+    #           <br>DEBUG: %s 
+    #           <br>SECRET: %s
+    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms.xml">choose lms</a>
+    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming.xml">programming</a>
+    #           <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris.xml">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
+
+
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -47,7 +67,7 @@ def sign_up():
 def frameworks():
 	return_dict = {'frameworks_form': FrameworksForm()}
 	if request.method == 'GET':
-		return_dict['cfwks'] = get_all_comp_frameworks()
+		return_dict['cfwks'] = competency.get_all_comp_frameworks()
 	else:
 		ff = FrameworksForm(request.POST)
 		#validate form here somehow
@@ -62,3 +82,4 @@ def frameworks():
 @app.route('/me', methods=["GET"])
 def me():
 	return render_template('me.html')
+
