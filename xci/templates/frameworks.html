@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <form class="form-horizontal" role="form" method="post">
-	{% csrf_token %}
-	{% if frameworks_form.errors %}
-		{% for error in frameworks_form.non_field_errors %}
-		<div class="alert alert-danger">{{ error }}</div>
-		{% endfor %}
-	{% endif %}	
+	{{ frameworks_form.hidden_tag() }}
+	{% for field, errors in frameworks_form.errors.iteritems() %}
+		<div class="alert alert-danger">{{ field }}: {{ ', '.join(errors) }}</div>
+	{% endfor %}	
 	{% for field in frameworks_form %}
 	<div class="form-group">
-	{% for error in field.errors %}
-	<div class="alert alert-danger">{{ error }}</div>
-	{% endfor %}
-	<label class="col-sm-2 control-label" for="{{ field.auto_id }}">{{ field.label }}</label>
-	<div class="col-sm-10">{{ field|add_class:"form-control" }}</div>
+	{{ field.label(class_='col-sm-2 control-label', for=field.id) }}
+	{{ field(class_='form-control col-sm-10') }}
 	</div>
 	{% endfor %}
 	<div class="form-group">
@@ -31,11 +26,11 @@
 		</div>
 		<div class="panel-body">
 			<p>{{ cfwk.description }}</p>
-			<p><a href="{% url 'comp.views.me_competency' cfwk.id %}" class="btn btn-primary" role="button">Go</a></p>
+			<p><a href="{{ url_for('me_competency', cfwk_id=cfwk.id) }}" class="btn btn-primary" role="button">Go</a></p>
 		</div>
 	</div>
 </div>
-{% empty %}
+{% else %}
 <p>No frameworks added to the system yet!</p>
 {% endfor %}
 {% endblock %}
