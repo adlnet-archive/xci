@@ -2,7 +2,7 @@ from xci import app, competency
 from flask import render_template, redirect, flash, url_for, request, make_response
 from forms import LoginForm, RegistrationForm, FrameworksForm
 from models import User
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 import json
@@ -12,10 +12,6 @@ login_manager.init_app(app)
 
 mongo = MongoClient()
 db = mongo.xci
-
-def add_login_to_return_dict(r_dict):
-	r_dict['login_form'] = LoginForm()
-	return r_dict
 
 @login_manager.user_loader
 def load_user(user):
@@ -29,8 +25,7 @@ def load_user(user):
 
 @app.route('/', methods=['GET'])
 def index():
-    return_dict = add_login_to_return_dict({})
-    return render_template('home.html', **return_dict)
+    return render_template('home.html')
     # uri = request.args.get('uri', None)
     # if uri:
     #     p = competency.parseMedBiq(uri)
@@ -56,32 +51,23 @@ def logout():
 	logout_user()
 	return redirect(url_for('index'))
 
-@app.route('/login', methods=["POST"])
+@app.route('/login', methods=["GET","POST"])
 def login():
-	lf = LoginForm(request.form)
-	next = request.args.get("next")
-
-	if lf.validate_on_submit():
-		user = User(lf.username.data, generate_password_hash(lf.password.data))
-		login_user(user)
-		return redirect(next or url_for("index"))
+	if request.method == 'GET':
+		return render_template('login.html', login_form=LoginForm())
 	else:
-		import pdb
-		pdb.set_trace()
-		if next == '/':
-			return render_template('home.html',login_form=lf)
-		elif next == '/frameworks':
-			return render_template('frameworks.html', login_form=lf, frameworks_form=FrameworksForm(), cfwks=competency.get_all_comp_frameworks())
-		elif next == '/sign_up':
-			return render_template('sign_up', login_form=lf, signup_form=RegistrationForm())
-		elif next == '/me':
-			return render_template('me', login_form=lf)
+		lf = LoginForm(request.form)
+		if lf.validate_on_submit():
+			user = User(lf.username.data, generate_password_hash(lf.password.data))
+			login_user(user)
+			return redirect(url_for("index"))
+		else:
+			return render_template("login.html", login_form=lf)
 
 @app.route('/sign_up', methods=["GET", "POST"])
 def sign_up():
 	if request.method == 'GET':
-		return_dict = {'signup_form': RegistrationForm(), 'hide': True}
-		return render_template('sign_up.html', **add_login_to_return_dict(return_dict))
+		return render_template('sign_up.html', signup_form=RegistrationForm(), hide=True)
 	else:
 		rf = RegistrationForm(request.form)
 		if rf.validate_on_submit():
@@ -91,28 +77,36 @@ def sign_up():
 			
 			user = User(rf.username.data, generate_password_hash(rf.password.data))
 			login_user(user)
-			return redirect(request.args.get('next') or url_for('index'))
-		return render_template(url_for('sign_up'), rf)
-
+			return redirect(url_for('index'))
+		return render_template('sign_up.html', signup_form=rf, hide=True)
 
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
-	return_dict = {'frameworks_form': FrameworksForm()}
 	if request.method == 'GET':
-		return_dict['cfwks'] = competency.get_all_comp_frameworks()
+		return_dict = {'frameworks_form': FrameworksForm()}
 	else:
 		ff = FrameworksForm(request.form)
-		#validate form here somehow
-		try:
-			#add to system
-			pass
-		except Exception, e:
-			raise e
-	return render_template('frameworks.html', **add_login_to_return_dict(return_dict))
+		if ff.validate_on_submit():
+			try:
+				#add to system
+				pass
+			except Exception, e:
+				raise e
+			return_dict = {'frameworks_form': FrameworksForm()}
+		else:
+			return_dict = {'frameworks_form': ff}
 
+	return_dict['cfwks'] = competency.get_all_comp_frameworks()
+	return render_template('frameworks.html', **return_dict)
 
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-	return render_template('me.html')
+	comp_fwks = [] # Get user comps right here
+	return render_template('me.html', comp_fwks=comp_fwks)
 
+@app.route('/me/<comp_id>', methods=["GET"])
+@login_required
+def me_comp(comp_id):
+	me = current_user
+	return render_template('mycomp.html', comp_id=comp_id)
