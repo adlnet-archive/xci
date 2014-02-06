@@ -6,7 +6,7 @@ import json
 def index():
     uri = request.args.get('uri', None)
     if uri:
-        p = competency.parseMedBiq(uri)
+        p = competency.parseComp(uri)
         try:
             resp = make_response(json.dumps(p), 200)
             resp.headers['Content-Type'] = "application/json"

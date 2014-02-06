@@ -12,7 +12,7 @@ mb_namespaces = {'cf': 'http://ns.medbiq.org/competencyframework/v1/',
               'dcterms': "http://purl.org/dc/terms/",
               'rdf': "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}
 
-def parseMedBiq(uri):
+def parseComp(uri):
     parsers = {'{http://ns.medbiq.org/competencyframework/v1/}CompetencyFramework' : parseMedBiqCompXML,
             '{http://ns.medbiq.org/competencyobject/v1/}CompetencyObject' : parseMedBiqCompXML,
             '{http://ns.medbiq.org/performanceframework/v1/}PerformanceFramework' : parseMedBiqPerfXML}
