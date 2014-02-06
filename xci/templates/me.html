@@ -3,12 +3,12 @@
 <div class="row">
 	<div class="col-xs-12">
 		<div class="page-header">
-			<h1>{{request.user.username}} <small>Competencies you signed up for</small></h1>
+			<h1>{{request.remote_user.username}} <small>Competencies you signed up for</small></h1>
 		</div>
 	</div>
 </div>
 <div class="row">
-	{% for comp in request.user.competencies %}
+	{% for comp in request.remote_user.competencies %}
 	<div class="col-xs-12">
 		{% if comp.met %}
 			<div class="panel panel-success">
@@ -17,7 +17,7 @@
 				</div>
 				<div class="panel-body">
 					<p>{{ comp.description }}</p>
-					<p><a href="{% url 'comp.views.me_competency' comp.id %}" class="btn btn-primary btn-sm" role="button">Details</a></p>
+					<p><a href="{{ url_for('me_competency', comp_id=comp.id) }}" class="btn btn-primary btn-sm" role="button">Details</a></p>
 				</div>
 			</div>
 		{% else %}
@@ -27,7 +27,7 @@
 				</div>
 				<div class="panel-body">
 					<p>{{ comp.description }}</p>
-					<p><a href="{% url 'comp.views.me_competency' comp.id %}" class="btn btn-primary btn-sm" role="button">Details</a></p>
+					<p><a href="{{ url_for('me_competency', comp_id=comp.id) }}" class="btn btn-primary btn-sm" role="button">Details</a></p>
 				</div>
 			</div>
 		{% endif %}
