@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="form-horizontal" role="form" method="post">
+	{{ login_form.hidden_tag() }}
+		{% for field, errors in login_form.errors.iteritems() %}
+			<div class="alert alert-danger">{{ field }}: {{ ', '.join(errors) }}</div>
+	{% endfor %}
+		{% for field in login_form %}
+		<div class="form-group">
+		{{ field.label(class_='sr-only', for=field.id) }}
+		{{ field(class_='form-control', placeholder=field.name) }}
+	</div>
+	{% endfor %}
+	<button type="submit" class="btn btn-default">Login</button>
+</form>
+{% endblock %}
