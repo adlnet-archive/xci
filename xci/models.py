@@ -28,6 +28,9 @@ def updateCompetency(json_comp):
 def getCompetency(uri):
     return db.competency.find_one({'uri':uri})
 
+def findoneComp(d):
+    return db.competency.find_one(d)
+
 def saveCompetencyFramework(json_fwk):
     if getCompetencyFramework(json_fwk['uri']):
         updateCompetencyFramework(json_fwk)

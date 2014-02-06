@@ -28,6 +28,12 @@ def getfn(s):
 def getCommonCore():
     parts = ["http://www.corestandards.org/Math.xml",
              "http://www.corestandards.org/ELA-Literacy.xml"]
+    
+    # see if common core objects are already in db
+    exists = models.findoneComp({'type':'commoncoreobject'})
+    if exists:
+        return
+
     for p in parts:
         try:
             res = requests.get(p).text
