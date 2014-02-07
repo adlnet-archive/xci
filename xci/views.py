@@ -15,98 +15,98 @@ db = mongo.xci
 
 @login_manager.user_loader
 def load_user(user):
-	if isinstance(user, basestring):
-		userobj = User(user, 'get')
-		u_id = userobj.get_id()
-		return userobj
-	else:
-		u_id = user.get_id()
-		return user
+    if isinstance(user, basestring):
+        userobj = User(user, 'get')
+        u_id = userobj.get_id()
+        return userobj
+    else:
+        u_id = user.get_id()
+        return user
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('home.html')
-    # uri = request.args.get('uri', None)
-    # if uri:
-    #     p = competency.parseMedBiq(uri)
-    #     try:
-    #         resp = make_response(json.dumps(p), 200)
-    #         resp.headers['Content-Type'] = "application/json"
-    #         return resp
-    #     except Exception as e:
-    #         return make_response("%s<br>%s" % (str(e), p), 200)
-    #         # return make_response("fail <br> %s" % repr(p), 200)
+    uri = request.args.get('uri', None)
+    if uri:
+        p = competency.parseComp(uri)
+        try:
+            resp = make_response(json.dumps(p), 200)
+            resp.headers['Content-Type'] = "application/json"
+            return resp
+        except Exception as e:
+            return make_response("%s<br>%s" % (str(e), p), 200)
+            # return make_response("fail <br> %s" % repr(p), 200)
 
-    # return '''yay we dids it! 
-    #           <br>DEBUG: %s 
-    #           <br>SECRET: %s
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms.xml">choose lms</a>
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming.xml">programming</a>
-    #           <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris.xml">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
+    return '''yay we dids it! 
+              <br>DEBUG: %s 
+              <br>SECRET: %s
+              <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
+              <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming">programming</a>
+              <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
 
-
+    # return render_template('home.html')
+    
 @app.route('/logout')
 @login_required
 def logout():
-	logout_user()
-	return redirect(url_for('index'))
+    logout_user()
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=["GET","POST"])
 def login():
-	if request.method == 'GET':
-		return render_template('login.html', login_form=LoginForm())
-	else:
-		lf = LoginForm(request.form)
-		if lf.validate_on_submit():
-			user = User(lf.username.data, generate_password_hash(lf.password.data))
-			login_user(user)
-			return redirect(url_for("index"))
-		else:
-			return render_template("login.html", login_form=lf)
+    if request.method == 'GET':
+        return render_template('login.html', login_form=LoginForm())
+    else:
+        lf = LoginForm(request.form)
+        if lf.validate_on_submit():
+            user = User(lf.username.data, generate_password_hash(lf.password.data))
+            login_user(user)
+            return redirect(url_for("index"))
+        else:
+            return render_template("login.html", login_form=lf)
 
 @app.route('/sign_up', methods=["GET", "POST"])
 def sign_up():
-	if request.method == 'GET':
-		return render_template('sign_up.html', signup_form=RegistrationForm(), hide=True)
-	else:
-		rf = RegistrationForm(request.form)
-		if rf.validate_on_submit():
-			users = db.userprofiles
-			users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-				'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':[], 'compfwks':[], 'lrsprofiles':[]})
-			
-			user = User(rf.username.data, generate_password_hash(rf.password.data))
-			login_user(user)
-			return redirect(url_for('index'))
-		return render_template('sign_up.html', signup_form=rf, hide=True)
+    if request.method == 'GET':
+        return render_template('sign_up.html', signup_form=RegistrationForm(), hide=True)
+    else:
+        rf = RegistrationForm(request.form)
+        if rf.validate_on_submit():
+            users = db.userprofiles
+            users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
+                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':[], 'compfwks':[], 'lrsprofiles':[]})
+            
+            user = User(rf.username.data, generate_password_hash(rf.password.data))
+            login_user(user)
+            return redirect(url_for('index'))
+        return render_template('sign_up.html', signup_form=rf, hide=True)
 
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
-	if request.method == 'GET':
-		return_dict = {'frameworks_form': FrameworksForm()}
-	else:
-		ff = FrameworksForm(request.form)
-		if ff.validate_on_submit():
-			try:
-				#add to system
-				pass
-			except Exception, e:
-				raise e
-			return_dict = {'frameworks_form': FrameworksForm()}
-		else:
-			return_dict = {'frameworks_form': ff}
+    if request.method == 'GET':
+        return_dict = {'frameworks_form': FrameworksForm()}
+    else:
+        ff = FrameworksForm(request.form)
+        if ff.validate_on_submit():
+            try:
+                #add to system
+                pass
+            except Exception, e:
+                raise e
+            return_dict = {'frameworks_form': FrameworksForm()}
+        else:
+            return_dict = {'frameworks_form': ff}
 
-	return_dict['cfwks'] = competency.get_all_comp_frameworks()
-	return render_template('frameworks.html', **return_dict)
+    return_dict['cfwks'] = competency.get_all_comp_frameworks()
+    return render_template('frameworks.html', **return_dict)
 
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-	comp_fwks = [] # Get user comps right here
-	return render_template('me.html', comp_fwks=comp_fwks)
+    comp_fwks = [] # Get user comps right here
+    return render_template('me.html', comp_fwks=comp_fwks)
 
 @app.route('/me/<comp_id>', methods=["GET"])
 @login_required
 def me_comp(comp_id):
-	me = current_user
-	return render_template('mycomp.html', comp_id=comp_id)
+    me = current_user
+    return render_template('mycomp.html', comp_id=comp_id)
