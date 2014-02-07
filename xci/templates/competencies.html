@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block jumbo %}
-<h1>Competencies</h1>
-{% endblock %}
 {% block content %}
-{% for c in comps %}
+<div class="page-header">
+	<h1>Competencies</h1>
+</div>
 <div class="col-xs-12">
+{% for c in comps %}
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<h3 class="panel-title">{{ c.title }}</h3>
@@ -13,8 +13,8 @@
 			<p>{{ c.description }}</p>
 		</div>
 	</div>
-</div>
 {% else %}
 <p>No competencies added to the system yet!</p>
 {% endfor %}
+</div>
 {% endblock %}
