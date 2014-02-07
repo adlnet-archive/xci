@@ -80,6 +80,10 @@ def sign_up():
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
 
+@app.route('/competencies')
+def competencies():
+    return render_template('competencies.html')
+
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
     if request.method == 'GET':

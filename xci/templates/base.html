@@ -28,9 +28,10 @@
 			<a class="navbar-text navbar-left" href="{{ url_for('frameworks') }}">Frameworks</a></li>
 		</nav>
 		<div class="jumbotron">
-			<div class="container">
-				{% block content %}{% endblock %}
-			</div>
+			{% block jumbo %}{% endblock %}
+		</div>
+		<div class="container">
+			{% block content %}{% endblock %}
 		</div>
 	</body>
 </html>
