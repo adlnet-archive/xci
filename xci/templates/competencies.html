@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block jumbo %}
+<h1> hi tom... this is the competencies page</h1>
+{% endblock %}
+{% block content %}
+<p>Below are the frameworks already added to the system. If you want to add one to your list, just click Go!</p>
+{% for cfwk in cfwks %}
+<div class="col-xs-12">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h3 class="panel-title">{{ cfwk.title }}</h3>
+		</div>
+		<div class="panel-body">
+			<p>{{ cfwk.description }}</p>
+			<p><a href="{{ url_for('me_competency', cfwk_id=cfwk.id) }}" class="btn btn-primary" role="button">Go</a></p>
+		</div>
+	</div>
+</div>
+{% else %}
+<p>No frameworks added to the system yet!</p>
+{% endfor %}
+{% endblock %}
