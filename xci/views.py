@@ -6,6 +6,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 import json
+import models
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -79,6 +80,12 @@ def sign_up():
             login_user(user)
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
+
+@app.route('/competencies')
+def competencies():
+    d = {}
+    d['comps'] = models.findCompetencies()
+    return render_template('competencies.html', **d)
 
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():

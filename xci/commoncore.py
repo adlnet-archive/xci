@@ -45,7 +45,7 @@ def saveCCXMLinDB(thexml):
             continue
 
         itemj['title'] = sc
-        itemj['desciption'] = getdescription(item)
+        itemj['description'] = getdescription(item)
         itemj['uri'] = geturi(item)
         itemj['ids'] = getids(item)
         itemj['type'] = CCObjectType
