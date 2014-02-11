@@ -84,6 +84,12 @@ def sign_up():
 @app.route('/competencies')
 def competencies():
     d = {}
+    uri = request.args.get('uri', None)
+    if uri:
+        d['uri'] = uri
+        d['comp'] = models.getCompetency(uri)
+        return render_template('comp-details.html', **d)
+
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)
 

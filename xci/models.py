@@ -25,8 +25,10 @@ def saveCompetency(json_comp):
 def updateCompetency(json_comp):
     db.competency.update({'uri':json_comp['uri']}, json_comp, manipulate=False)
 
-def getCompetency(uri):
-    return db.competency.find_one({'uri':uri})
+def getCompetency(uri, objectid=False):
+    if objectid:
+        return db.competency.find_one({'uri':uri})
+    return db.competency.find_one({'uri':uri}, {'_id':0})
 
 def findoneComp(d):
     return db.competency.find_one(d)
