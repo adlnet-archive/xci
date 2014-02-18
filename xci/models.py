@@ -17,9 +17,12 @@ class User(UserMixin):
             raise e
 
 def saveCompetency(json_comp):
+    print 'in models saveCompetency--'
     if getCompetency(json_comp['uri']):
+        print 'going to update: %s' % json_comp['uri']
         updateCompetency(json_comp)
     else:
+        print  'inserting into db.comptency: %s' % json_comp['uri']
         db.competency.insert(json_comp, manipulate=False)
 
 def updateCompetency(json_comp):
@@ -55,13 +58,15 @@ def savePerformanceFramework(json_fwk):
         db.perfwk.insert(json_fwk, manipulate=False)
 
 def updatePerformanceFramework(json_fwk):
-    print '-------   updating   -------------'
-    print 'uri: %s' % json_fwk['uri']
-    print 'count: %s' % db.perfwk.count()
     val = db.perfwk.update({'uri':json_fwk['uri']}, json_fwk, manipulate=False)
-    print '\n'
-    print val
-    print '\ncount (after update): %s\n\n-----------------' % db.perfwk.count()
 
 def getPerformanceFramework(uri):
     return db.perfwk.find_one({'uri':uri})
+
+def dropCompCollections():
+    db.drop_collection('competency')
+    db.drop_collection('compfwk')
+    db.drop_collection('perfwk')
+
+def dropAll():
+    return mongo.drop_database(db)

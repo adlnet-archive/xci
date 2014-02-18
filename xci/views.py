@@ -28,6 +28,7 @@ def load_user(user):
 def index():
     uri = request.args.get('uri', None)
     if uri:
+        print 'going to parse comp'
         p = competency.parseComp(uri)
         try:
             resp = make_response(json.dumps(p), 200)
@@ -123,3 +124,19 @@ def me():
 def me_comp(comp_id):
     me = current_user
     return render_template('mycomp.html', comp_id=comp_id)
+
+@app.route('/admin/reset', methods=["GET"])
+def reset_all():
+    models.dropAll()
+    return redirect(url_for("index"))
+
+@app.route('/admin/reset/comps', methods=["GET"])
+def reset_comps():
+    models.dropCompCollections()
+    return redirect(url_for("index"))
+
+@app.route('/cc')
+def load_cc():
+    from xci import commoncore
+    commoncore.getCommonCore()
+    return redirect(url_for("competencies"))
