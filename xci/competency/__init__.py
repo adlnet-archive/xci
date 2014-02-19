@@ -31,9 +31,7 @@ def parseComp(uri):
     # url = uri
     res = requests.get(addXMLSuffix(copy.copy(uri))).text
     xmlbit = ET.fromstring(res)
-    print 'xmlbit: %s' % xmlbit.tag
     existing = types[xmlbit.tag]['getmodel'](uri)
-    print 'existing: %s' % existing
     if existing:
         existing.pop('_id', False)
         return existing
@@ -59,9 +57,7 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         obj = addChild(obj, c['uri'])
     # removed this for now... look at medbiq compfwk Relation later: return structure(xmlbit, obj)
     ### save this object to the db, whatever it is
-    print 'obj: %s' % obj['uri']
     if obj['type'] == MB_COMP_TYPE:
-        print 'saving comp: %s' % obj['uri']
         models.saveCompetency(obj)
     else:
         models.saveCompetencyFramework(obj)

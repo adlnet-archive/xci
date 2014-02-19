@@ -17,12 +17,9 @@ class User(UserMixin):
             raise e
 
 def saveCompetency(json_comp):
-    print 'in models saveCompetency--'
     if getCompetency(json_comp['uri']):
-        print 'going to update: %s' % json_comp['uri']
         updateCompetency(json_comp)
     else:
-        print  'inserting into db.comptency: %s' % json_comp['uri']
         db.competency.insert(json_comp, manipulate=False)
 
 def updateCompetency(json_comp):
