@@ -3,7 +3,15 @@
 <div class="row">
 	<div class="col-xs-12">
 		<div class="page-header">
-			<h1>{{ current_user.id }} <small>Competencies you signed up for</small></h1>
+			<h1>{{ current_user.id }}</h1>
+			<br>
+			<small>{{ name }}</small>
+			<br>
+			<small>{{ email }}</small>
+			<br>
+			<small>You have achieved {{ completed }} competencies. You are currently working on {{ started }} other competencies</small>
+			<br>
+			<small><a href="{{ url_for('me_settings') }}">Settings</a></small>
 		</div>
 	</div>
 </div>
