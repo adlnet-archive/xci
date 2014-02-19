@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+	<div class="col-xs-12">
+		<div class="page-header">
+			<h1>{{ current_user.id }}</h1>
+		</div>
+	</div>
+</div>
+<div class="row" id="formrow">
+	{% for profile in user_profiles %}
+	<span>{{ profile['name'] }}</span>
+	<form class="form-horizontal" role="form" method="post" id="{{ profile['name'] }}" action="{{ url_for('update_endpoint') }}">
+	<input type="hidden" name="name" value="{{ profile['name'] }}">
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="{{ profile['name'] + ' endpoint'}}">{{ profile['name'] + ' endpoint'}}</label>
+		<div class="col-sm-10">
+			<input type="textbox" name="endpoint" class="form-control" id="{{ profile['name'] + ' endpoint' }}" placeholder="{{ profile['endpoint'] }}"></input>
+		</div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="{{ profile['name'] + ' username'}}">{{ profile['name'] + ' username'}}</label>
+		<div class="col-sm-10">
+			<input type="textbox" name="auth" class="form-control" id="{{ profile['name'] + ' username' }}" placeholder="{{ profile['auth'] }}"></input>
+		</div>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="{{ profile['name'] + ' password'}}">{{ profile['name'] + ' password'}}</label>
+		<div class="col-sm-10">
+			<input type="password" name="password" class="form-control" id="{{ profile['name'] + ' password' }}"></input>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-sm-offset-2 col-sm-10">
+			<div class="checkbox">
+				<label>
+					{% if profile['default'] %}
+					<input type="checkbox" name="default" id="{{ profile['name'] + ' default' }}" checked>Set as default
+					{% else %}
+					<input type="checkbox" name="default" id="{{ profile['name'] + ' default' }}">Set as default
+					{% endif %}
+				</label>
+			</div>
+		</div>	
+	</div>
+	<div class="form-group">
+		<div class="col-sm-offset-2 col-sm-10">	<button type="submit" class="btn btn-default">Submit</button></div>
+	</div>
+	</form>
+	{% else %}
+	<div class="col-xs-12">You have no profiles yet!</div>
+	{% endfor %}
+	<br>
+	<span>Need to add an endpoint?</span>
+	<form class="form-horizontal" role="form" method="post" id="addendpoint" action="{{ url_for('add_endpoint') }}">
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="newname">Name</label>
+			<div class="col-sm-10">
+				<input type="textbox" name="newname" class="form-control" id="newname"></input>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="newendpoint">Endpoint</label>
+			<div class="col-sm-10">
+				<input type="textbox" name="newendpoint" class="form-control" id="newendpoint"></input>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="newauth">Username</label>
+			<div class="col-sm-10">
+				<input type="textbox" name="newauth" class="form-control" id="newauth"></input>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="newpassword">Password</label>
+			<div class="col-sm-10">
+				<input type="password" name="newpassword" class="form-control" id="newpassword"></input>
+			</div>
+		</div>		
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<div class="checkbox">
+					<label>
+						<input type="checkbox" name="newdefault" id="newdefault" checked>Set as default
+					</label>
+				</div>
+			</div>	
+		</div>		
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">	<button type="submit" class="btn btn-default">Add</button></div>
+		</div>
+	</form>
+</div>
+{% endblock %}
