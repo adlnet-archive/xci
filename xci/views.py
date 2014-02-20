@@ -32,25 +32,26 @@ def index():
         try:
             resp = make_response(json.dumps(p), 200)
             resp.headers['Content-Type'] = "application/json"
-            return resp
+            # return resp
+            return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
             # return make_response("fail <br> %s" % repr(p), 200)
 
-    return '''yay we dids it! 
-              <br>DEBUG: %s 
-              <br>SECRET: %s
-              <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
-              <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming">programming</a>
-              <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
+    # return '''yay we dids it! 
+    #           <br>DEBUG: %s 
+    #           <br>SECRET: %s
+    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
+    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming">programming</a>
+    #           <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
 
-    # return render_template('home.html')
+    return render_template('home.html')
     
 @app.route('/logout')
 @login_required
 def logout():
-	logout_user()
-	return redirect(url_for('index'))
+    logout_user()
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=["GET","POST"])
 def login():
@@ -74,7 +75,7 @@ def sign_up():
         if rf.validate_on_submit():
             users = db.userprofiles
             users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':[], 'compfwks':[], 'lrsprofiles':[]})
+                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'lrsprofiles':[]})
             
             user = User(rf.username.data, generate_password_hash(rf.password.data))
             login_user(user)
@@ -84,48 +85,79 @@ def sign_up():
 @app.route('/competencies')
 def competencies():
     d = {}
+    uri = request.args.get('uri', None)
+    uview = request.args.get('userview', False)
+    if uri:
+        d['uri'] = uri
+        d['comp'] = models.getCompetency(uri)
+        d['userview'] = uview
+        return render_template('comp-details.html', **d)
+
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)
 
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
-	if request.method == 'GET':
-		return_dict = {'frameworks_form': FrameworksForm()}
-	else:
-		ff = FrameworksForm(request.form)
-		if ff.validate_on_submit():
-			try:
-				#add to system
-				pass
-			except Exception, e:
-				raise e
-			return_dict = {'frameworks_form': FrameworksForm()}
-		else:
-			return_dict = {'frameworks_form': ff}
+    if request.method == 'GET':
+        return_dict = {'frameworks_form': FrameworksForm()}
+    else:
+        ff = FrameworksForm(request.form)
+        if ff.validate_on_submit():
+            try:
+                #add to system
+                pass
+            except Exception, e:
+                raise e
+            return_dict = {'frameworks_form': FrameworksForm()}
+        else:
+            return_dict = {'frameworks_form': ff}
 
-	return_dict['cfwks'] = competency.get_all_comp_frameworks()
-	return render_template('frameworks.html', **return_dict)
+    return_dict['cfwks'] = competency.get_all_comp_frameworks()
+    return render_template('frameworks.html', **return_dict)
 
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-	username = current_user.id
-	user = db.userprofiles.find_one({'username':username})
-	user_comps = user['competencies']
-	# user_profiles = user['lrsprofiles']
+    username = current_user.id
+    user = models.getUserProfile(username)
+    user_comps = user['competencies'].values()
+    # user_profiles = user['lrsprofiles']
 
-	# completed_comps = [c for c in user_comps if c['completed'] == True].count()
-	completed_comps = sum(1 for c in user_comps if c['completed'])
-	started_comps = len(user_comps) - completed_comps	
-	name = user['first_name'] + ' ' + user['last_name']
+    # completed_comps = [c for c in user_comps if c['completed'] == True].count()
+    completed_comps = sum(1 for c in user_comps if c.get('completed',False))
+    started_comps = len(user_comps) - completed_comps   
+    name = user['first_name'] + ' ' + user['last_name']
 
-	return render_template('me.html', comps=user_comps, completed=completed_comps, started=started_comps, name=name, email=user['email'])
+    return render_template('me.html', comps=user_comps, completed=completed_comps, started=started_comps, name=name, email=user['email'])
 
-@app.route('/me/<comp_id>', methods=["GET"])
+@app.route('/me/add', methods=["POST"])
 @login_required
-def me_comp(comp_id):
-	me = current_user
-	return render_template('mycomp.html', comp_id=comp_id)
+def add_comp():
+    uri = request.form.get('comp_uri', None)
+    userprof = models.getUserProfile(current_user.id)
+    h = str(hash(uri))
+    if uri and h not in userprof:
+        comp = models.getCompetency(uri)
+        userprof['competencies'][h] = comp
+        models.saveUserProfile(userprof, current_user.id)
+    return redirect(url_for("me"))
+
+@app.route('/admin/reset', methods=["GET"])
+def reset_all():
+    logout_user()
+    models.dropAll()
+    return redirect(url_for("index"))
+
+@app.route('/admin/reset/comps', methods=["GET"])
+def reset_comps():
+    models.dropCompCollections()
+    return redirect(url_for("index"))
+
+@app.route('/cc')
+def load_cc():
+    from xci import commoncore
+    commoncore.getCommonCore()
+    return redirect(url_for("competencies"))
 
 @app.route('/me/settings', methods=["GET"])
 @login_required

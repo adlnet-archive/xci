@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ comp.title }}
+    {% if current_user.is_authenticated() and not userview %}
+        <small>
+            <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
+            <input type="hidden" name="comp_uri" value="{{ comp.uri }}">
+            <button type="submit" class="btn btn-default">Register</button>
+            </form>
+        </small>
+    {% elif userview and comp.completed %}
+        <small><span class="label label-success">completed</span></small>
+    {% endif %}</h1>
+</div>
+<div class="col-xs-12">
+<dl class="dl-horizontal">
+    <dt>uri</dt>
+    <dd>{{ comp.uri }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>description</dt>
+    <dd>{{ comp.description }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>levels</dt>
+    <dd>{{ comp.levels }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>type</dt>
+    <dd>{{ comp.type }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>last modified</dt>
+    <dd>{{ comp.lastmodified }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>ids</dt>
+    <dd>{{ comp.ids }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>relations</dt>
+    <dd>{{ comp.relations }}</dd>
+</dl>
+</div>
+{% endblock %}

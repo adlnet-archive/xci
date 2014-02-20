@@ -16,6 +16,18 @@ class User(UserMixin):
         except Exception, e:
             raise e
 
+def getUserProfile(userid):
+    return db.userprofiles.find_one({'username':userid})
+
+def saveUserProfile(profile, userid=None):
+    if userid:
+        updateUserProfile(profile, userid)
+    else:
+        db.userprofiles.insert(profile)
+
+def updateUserProfile(profile, userid):
+    db.userprofiles.update({'username':userid}, profile, manipulate=False)
+
 def saveCompetency(json_comp):
     if getCompetency(json_comp['uri']):
         updateCompetency(json_comp)
@@ -25,8 +37,10 @@ def saveCompetency(json_comp):
 def updateCompetency(json_comp):
     db.competency.update({'uri':json_comp['uri']}, json_comp, manipulate=False)
 
-def getCompetency(uri):
-    return db.competency.find_one({'uri':uri})
+def getCompetency(uri, objectid=False):
+    if objectid:
+        return db.competency.find_one({'uri':uri})
+    return db.competency.find_one({'uri':uri}, {'_id':0})
 
 def findoneComp(d):
     return db.competency.find_one(d)
@@ -53,13 +67,15 @@ def savePerformanceFramework(json_fwk):
         db.perfwk.insert(json_fwk, manipulate=False)
 
 def updatePerformanceFramework(json_fwk):
-    print '-------   updating   -------------'
-    print 'uri: %s' % json_fwk['uri']
-    print 'count: %s' % db.perfwk.count()
     val = db.perfwk.update({'uri':json_fwk['uri']}, json_fwk, manipulate=False)
-    print '\n'
-    print val
-    print '\ncount (after update): %s\n\n-----------------' % db.perfwk.count()
 
 def getPerformanceFramework(uri):
     return db.perfwk.find_one({'uri':uri})
+
+def dropCompCollections():
+    db.drop_collection('competency')
+    db.drop_collection('compfwk')
+    db.drop_collection('perfwk')
+
+def dropAll():
+    return mongo.drop_database(db)
