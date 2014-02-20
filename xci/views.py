@@ -127,14 +127,10 @@ def frameworks():
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-    # import pdb
-    # pdb.set_trace()
     username = current_user.id
     user = models.getUserProfile(username)
     user_comps = user['competencies'].values()
     user_fwks = user['compfwks'].values()
-    for u in user_fwks:
-        print u.get('met', "blah no")
     # user_profiles = user['lrsprofiles']
 
     # completed_comps = [c for c in user_comps if c['completed'] == True].count()
@@ -147,8 +143,6 @@ def me():
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
-    # import pdb
-    # pdb.set_trace()
     uri = request.form.get('comp_uri', None)
     userprof = models.getUserProfile(current_user.id)
     if uri:
