@@ -16,6 +16,18 @@ class User(UserMixin):
         except Exception, e:
             raise e
 
+def getUserProfile(userid):
+    return db.userprofiles.find_one({'username':userid})
+
+def saveUserProfile(profile, userid=None):
+    if userid:
+        updateUserProfile(profile, userid)
+    else:
+        db.userprofiles.insert(profile)
+
+def updateUserProfile(profile, userid):
+    db.userprofiles.update({'username':userid}, profile, manipulate=False)
+
 def saveCompetency(json_comp):
     if getCompetency(json_comp['uri']):
         updateCompetency(json_comp)
