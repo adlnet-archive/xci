@@ -99,6 +99,15 @@ def competencies():
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
     if request.method == 'GET':
+        uri = request.args.get('uri', None)
+        uview = request.args.get('userview', False)
+        if uri:
+            d = {}
+            d['uri'] = uri
+            d['fwk'] = models.getCompetencyFramework(uri)
+            d['userview'] = uview
+            return render_template('compfwk-details.html', **d)
+
         return_dict = {'frameworks_form': FrameworksForm()}
     else:
         ff = FrameworksForm(request.form)
@@ -112,15 +121,20 @@ def frameworks():
         else:
             return_dict = {'frameworks_form': ff}
 
-    return_dict['cfwks'] = competency.get_all_comp_frameworks()
+    return_dict['cfwks'] = models.findCompetencyFrameworks()
     return render_template('frameworks.html', **return_dict)
 
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
+    # import pdb
+    # pdb.set_trace()
     username = current_user.id
     user = models.getUserProfile(username)
     user_comps = user['competencies'].values()
+    user_fwks = user['compfwks'].values()
+    for u in user_fwks:
+        print u.get('met', "blah no")
     # user_profiles = user['lrsprofiles']
 
     # completed_comps = [c for c in user_comps if c['completed'] == True].count()
@@ -128,18 +142,29 @@ def me():
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
-    return render_template('me.html', comps=user_comps, completed=completed_comps, started=started_comps, name=name, email=user['email'])
+    return render_template('me.html', comps=user_comps, fwks=user_fwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
 
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
+    # import pdb
+    # pdb.set_trace()
     uri = request.form.get('comp_uri', None)
     userprof = models.getUserProfile(current_user.id)
-    h = str(hash(uri))
-    if uri and h not in userprof:
-        comp = models.getCompetency(uri)
-        userprof['competencies'][h] = comp
-        models.saveUserProfile(userprof, current_user.id)
+    if uri:
+        h = str(hash(uri))
+        if uri and h not in userprof['competencies']:
+            comp = models.getCompetency(uri)
+            userprof['competencies'][h] = comp
+            models.saveUserProfile(userprof, current_user.id)
+    elif request.form.get('fwk_uri', False):
+        fwkuri = request.form.get('fwk_uri', None)
+        fh = str(hash(fwkuri))
+        if fwkuri and fh not in userprof['compfwks']:
+            fwk = models.getCompetencyFramework(fwkuri)
+            userprof['compfwks'][fh] = fwk
+            models.saveUserProfile(userprof, current_user.id)
+
     return redirect(url_for("me"))
 
 @app.route('/admin/reset', methods=["GET"])
