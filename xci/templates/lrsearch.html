@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block js %}
+	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/routes.js"></script>
+	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/search.js"></script>
+	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/review.js"></script>
+{% endblock %}
+{% block content %}
+	<lrsearch endpoint="http://72.243.185.28/"></lrsearch>
+	<lrresults/>
+{% endblock %}
