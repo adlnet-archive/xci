@@ -196,3 +196,7 @@ def add_endpoint():
         db.userprofiles.update({'username':username}, user)
     
     return redirect(url_for('me'))
+
+@app.route('/lr_search', methods=["GET", "POST"])
+def lr_search():
+    return render_template('lrsearch.html')
