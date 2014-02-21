@@ -1,10 +1,45 @@
 {% extends "base.html" %}
-{% block js %}
-	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/routes.js"></script>
-	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/search.js"></script>
-	<script type="text/javascript" src="http://72.243.185.28/assets/javascripts/review.js"></script>
-{% endblock %}
 {% block content %}
-	<lrsearch endpoint="http://72.243.185.28/"></lrsearch>
-	<lrresults/>
+<form class="form-horizontal" role="form" method="post">
+	{{ search_form.hidden_tag() }}
+		{% for field, errors in search_form.errors.iteritems() %}
+			<div class="alert alert-danger">{{ field }}: {{ ', '.join(errors) }}</div>
+		{% endfor %}
+		{% for field in search_form %}
+		<div class="form-group">
+		{{ field.label(class_='sr-only', for=field.id) }}
+		{{ field(class_='form-control', placeholder=field.name) }}
+		</div>
+		{% endfor %}
+	<button type="submit" class="btn btn-default">Search</button>
+</form>
+<br>
+<div id="pagination">
+<ul class="media-list">
+	{% for r in result['data'] %}
+	<li class="media">
+		<a class="pull-left" href="{{ r['url'] }}">
+			<img class="media-object" src="{{ r['screenshot'] }}" alt="{{ r['title'] }}" height="180px" width="171px">
+		</a>
+		<div class="media-body">
+			<h4 class="media-heading"><a href="{{ r['url'] }}">{{ r['title'] }}</a></h4>
+			{{  r['description']  }}
+		</div>
+	</li>
+	{% endfor %}
+</ul>
+</div>
+{% endblock %}
+{% block js %}
+<script src="scripts/bootstrap-paginator-master/build/bootstrap-paginator.min.js"></script>
+<script type="text/javascript">
+	total = ("{{ result['count'] }}") ? "{{ result['count'] }}" : 0
+
+
+	var options = {
+		currentPage: 1,
+		totalPages: total
+	}
+	$('#pagination').bootstrapPaginator(options);
+</script>
 {% endblock %}

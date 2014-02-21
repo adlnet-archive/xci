@@ -1,5 +1,5 @@
 from flask_wtf import Form
-from wtforms import TextField, PasswordField, BooleanField
+from wtforms import TextField, PasswordField, BooleanField, RadioField
 from wtforms.validators import DataRequired
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash
@@ -38,6 +38,7 @@ class RegistrationForm(Form):
 	email = TextField('Email', validators=[DataRequired()])
 	username = TextField('Username', validators=[DataRequired()])
 	password = PasswordField('Password', validators=[DataRequired()])
+	role = RadioField('Role', validators=[DataRequired()], choices=[('admin', 'admin'), ('teacher', 'teacher'), ('student','student')])
 
 	def __init__(self, *args, **kwargs):
 		Form.__init__(self, *args, **kwargs)
@@ -64,3 +65,6 @@ class SettingsForm(Form):
 	username = TextField('Username', validators=[DataRequired()])
 	password = PasswordField('Password', validators=[DataRequired()])
 	default = BooleanField('Default')
+
+class SearchForm(Form):
+	search = TextField('Search', validators=[DataRequired()])
