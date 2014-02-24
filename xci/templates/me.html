@@ -46,7 +46,7 @@
     {% endfor %}
 </div>
 <div class="row">
-    <h4>Frameworks</h4>
+    <h4>Competency Frameworks</h4>
     {% for cfwk in fwks %}
     <div class="col-xs-12">
         {% if cfwk.met %}
@@ -64,6 +64,27 @@
     </div>
     {% else %}
     <div class="col-xs-12">No frameworks added to the system yet!</div>
+    {% endfor %}
+</div>
+<div class="row">
+    <h4>Performance Frameworks</h4>
+    {% for pfwk in pfwks %}
+    <div class="col-xs-12">
+        {% if pfwk.met %}
+        <div class="panel panel-success">
+        {% else %}
+        <div class="panel panel-default">
+        {% endif %}
+            <div class="panel-heading">
+                <h3 class="panel-title"><a href="{{ url_for('perfwks') }}?uri={{pfwk.uri}}&userview=true">{{ pfwk.title }}</a></h3>
+            </div>
+            <div class="panel-body">
+                <p>{{ pfwk.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-xs-12">No performance frameworks added to the system yet!</div>
     {% endfor %}
 </div>
 {% endblock %}

@@ -75,7 +75,7 @@ def sign_up():
         if rf.validate_on_submit():
             users = db.userprofiles
             users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'lrsprofiles':[]})
+                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[]})
             
             user = User(rf.username.data, generate_password_hash(rf.password.data))
             login_user(user)
@@ -146,6 +146,7 @@ def me():
     user = models.getUserProfile(username)
     user_comps = user['competencies'].values()
     user_fwks = user['compfwks'].values()
+    user_pfwks = user['perfwks'].values()
     # user_profiles = user['lrsprofiles']
 
     # completed_comps = [c for c in user_comps if c['completed'] == True].count()
@@ -153,7 +154,7 @@ def me():
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
-    return render_template('me.html', comps=user_comps, fwks=user_fwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
+    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
 
 @app.route('/me/add', methods=["POST"])
 @login_required
@@ -162,6 +163,8 @@ def add_comp():
     userprof = models.getUserProfile(current_user.id)
     if uri:
         h = str(hash(uri))
+        if not userprof.get('competencies', False):
+            userprof['competencies'] = {}
         if uri and h not in userprof['competencies']:
             comp = models.getCompetency(uri)
             userprof['competencies'][h] = comp
@@ -169,9 +172,20 @@ def add_comp():
     elif request.form.get('fwk_uri', False):
         fwkuri = request.form.get('fwk_uri', None)
         fh = str(hash(fwkuri))
+        if not userprof.get('compfwks', False):
+            userprof['compfwks'] = {}
         if fwkuri and fh not in userprof['compfwks']:
             fwk = models.getCompetencyFramework(fwkuri)
             userprof['compfwks'][fh] = fwk
+            models.saveUserProfile(userprof, current_user.id)
+    elif request.form.get('perfwk_uri', False):
+        fwkuri = request.form.get('perfwk_uri', None)
+        fh = str(hash(fwkuri))
+        if not userprof.get('perfwks', False):
+            userprof['perfwks'] = {}
+        if fwkuri and fh not in userprof['perfwks']:
+            fwk = models.getPerformanceFramework(fwkuri)
+            userprof['perfwks'][fh] = fwk
             models.saveUserProfile(userprof, current_user.id)
 
     return redirect(url_for("me"))

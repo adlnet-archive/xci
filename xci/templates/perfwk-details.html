@@ -5,7 +5,7 @@
     {% if current_user.is_authenticated() and not userview %}
         <small>
             <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
-            <input type="hidden" name="fwk_uri" value="{{ fwk.uri }}">
+            <input type="hidden" name="perfwk_uri" value="{{ fwk.uri }}">
             <button type="submit" class="btn btn-default">Register</button>
             </form>
         </small>
