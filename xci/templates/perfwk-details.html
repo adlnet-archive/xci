@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ fwk.title }}
+    {% if current_user.is_authenticated() and not userview %}
+        <small>
+            <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
+            <input type="hidden" name="perfwk_uri" value="{{ fwk.uri }}">
+            <button type="submit" class="btn btn-default">Register</button>
+            </form>
+        </small>
+    {% elif userview and fwk.completed %}
+        <small><span class="label label-success">completed</span></small>
+    {% endif %}</h1>
+</div>
+<div class="col-xs-12">
+    <dl class="dl-horizontal">
+        <dt>description</dt>
+        <dd>{{ fwk.description }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>uri</dt>
+        <dd>{{ fwk.uri }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>type</dt>
+        <dd>{{ fwk.type }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>last modified</dt>
+        <dd>{{ fwk.lastmodified }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>ids</dt>
+        <dd>{{ fwk.ids }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>referenced object id</dt>
+        <dd>{{ fwk.objectids }}</dd>
+    </dl>
+</div>
+<h2> Components </h2>
+{% for c in fwk.components %}
+<div class="col-xs-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">{{c.title}}</h3>
+        </div>
+        <div class="panel-body">
+            <h4>Competencies</h4>
+            <div class="list-group">
+            {% for p in c.competencies %}
+            {% if p.type == 'http://ns.medbiq.org/competencyframework/v1/' %}
+                <a href="{{ url_for('frameworks') }}?uri={{p.entry}}" class="list-group-item">{{ p.entry }}</a>
+            {% else %}
+                <a href="{{ url_for('competencies') }}?uri={{p.entry}}" class="list-group-item">{{ p.entry }}</a>
+            {% endif %}
+            {% endfor %}
+            </div>
+            <h4>Performance Levels</h4>
+            <div class="list-group">
+            {% for pl in c.performancelevels %}
+                <div class="list-group-item">
+                    <h5 class="list-group-item-heading">{{ pl.id }}</h5>
+                    <p class="list-group-item-text">
+                        <dl class="dl-horizontal">
+                            <dt>description</dt>
+                            <dd>{{ pl.description }}</dd>
+                        </dl>
+                        <dl class="dl-horizontal">
+                            <dt>score</dt>
+                            <dd>{{ pl.score.singlevalue }}</dd>
+                        </dl>
+                    </p>
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

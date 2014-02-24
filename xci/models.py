@@ -48,6 +48,9 @@ def findoneComp(d):
 def findCompetencies(d=None):
     return [x for x in db.competency.find(d)]
 
+def findCompetencyFrameworks(d=None):
+    return [x for x in db.compfwk.find(d)]
+
 def saveCompetencyFramework(json_fwk):
     if getCompetencyFramework(json_fwk['uri']):
         updateCompetencyFramework(json_fwk)
@@ -71,6 +74,9 @@ def updatePerformanceFramework(json_fwk):
 
 def getPerformanceFramework(uri):
     return db.perfwk.find_one({'uri':uri})
+
+def findPerformanceFrameworks(d=None):
+    return [x for x in db.perfwk.find(d)]
 
 def dropCompCollections():
     db.drop_collection('competency')
