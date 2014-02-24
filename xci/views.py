@@ -30,9 +30,9 @@ def index():
     if uri:
         p = competency.parseComp(uri)
         try:
-            resp = make_response(json.dumps(p), 200)
-            resp.headers['Content-Type'] = "application/json"
-            # return resp
+            # resp = make_response(json.dumps(p), 200)
+            # resp.headers['Content-Type'] = "application/json"
+            # # return resp
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
@@ -123,6 +123,21 @@ def frameworks():
 
     return_dict['cfwks'] = models.findCompetencyFrameworks()
     return render_template('frameworks.html', **return_dict)
+
+@app.route('/perfwks', methods=["GET", "POST"])
+def perfwks():
+    if request.method == 'GET':
+        uri = request.args.get('uri', None)
+        uview = request.args.get('userview', False)
+        if uri:
+            d = {}
+            d['uri'] = uri
+            d['fwk'] = models.getPerformanceFramework(uri)
+            d['userview'] = uview
+            return render_template('perfwk-details.html', **d)
+
+    d = {'pfwks':models.findPerformanceFrameworks()}
+    return render_template('performancefwks.html', **d)
 
 @app.route('/me', methods=["GET"])
 @login_required

@@ -75,6 +75,9 @@ def updatePerformanceFramework(json_fwk):
 def getPerformanceFramework(uri):
     return db.perfwk.find_one({'uri':uri})
 
+def findPerformanceFrameworks(d=None):
+    return [x for x in db.perfwk.find(d)]
+
 def dropCompCollections():
     db.drop_collection('competency')
     db.drop_collection('compfwk')
