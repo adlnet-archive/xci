@@ -10,7 +10,6 @@ class User(UserMixin):
         self.password = password
         self.roles = db.userprofiles.find_one({"username": self.id})['roles']
 
-
     def get_id(self):
         try:
             user = db.userprofiles.find_one({"username":self.id})

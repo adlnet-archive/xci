@@ -260,13 +260,19 @@ def unicode_to_string(json):
 
 @app.route('/lr_search', methods=["GET", "POST"])
 def lr_search():
+    comps = {}
+    if current_user.is_authenticated():
+        prof = models.getUserProfile(current_user.id)
+        comps = prof['competencies']
+
     if request.method == 'GET':
-        return render_template('lrsearch.html', search_form=SearchForm(), result={})
-    sf = SearchForm(request.form)
-    query = "search?terms=%s" % sf.search.data
-    result = json.loads(requests.get("http://72.243.185.28/" + query).content)
+        return render_template('lrsearch.html', search_form=SearchForm(), result={}, comps=comps)
+    else:
+        sf = SearchForm(request.form)
+        query = "search?terms=%s" % sf.search.data
+        result = json.loads(requests.get("http://72.243.185.28/" + query).content)
 
-    for item in result['data']:
-        item['screenshot'] = "http://72.243.185.28/" + "screenshot/" + item['_id']
+        for item in result['data']:
+            item['screenshot'] = "http://72.243.185.28/" + "screenshot/" + item['_id']
 
-    return render_template('lrsearch.html', search_form=SearchForm(), result=result)
+        return render_template('lrsearch.html', search_form=SearchForm(), result=result, comps=comps)
