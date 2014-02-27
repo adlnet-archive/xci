@@ -30,21 +30,9 @@ def index():
     if uri:
         p = competency.parseComp(uri)
         try:
-            # resp = make_response(json.dumps(p), 200)
-            # resp.headers['Content-Type'] = "application/json"
-            # # return resp
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
-            # return make_response("fail <br> %s" % repr(p), 200)
-
-    # return '''yay we dids it! 
-    #           <br>DEBUG: %s 
-    #           <br>SECRET: %s
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming">programming</a>
-    #           <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
-
     return render_template('home.html')
     
 @app.route('/logout')
@@ -89,7 +77,9 @@ def competencies():
     uview = request.args.get('userview', False)
     if uri:
         d['uri'] = uri
-        d['comp'] = models.getCompetency(uri)
+        comp = models.getCompetency(uri, objectid=True)
+        d['cid'] = comp.pop('_id')
+        d['comp'] = comp
         d['userview'] = uview
         return render_template('comp-details.html', **d)
 
@@ -280,3 +270,7 @@ def add_endpoint():
 @app.route('/lr_search', methods=["GET", "POST"])
 def lr_search():
     return render_template('lrsearch.html')
+
+@app.route('/admin/competency/edit/<objid>')
+def edit_comp(objid):
+    return "here: " % objid

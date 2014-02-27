@@ -85,3 +85,14 @@ def dropCompCollections():
 
 def dropAll():
     return mongo.drop_database(db)
+
+
+
+
+
+# from bson.objectid import ObjectId
+
+# # The web framework gets post_id from the URL and passes it as a string
+# def get(post_id):
+#     # Convert from string to ObjectId:
+#     document = client.db.collection.find_one({'_id': ObjectId(post_id)})
