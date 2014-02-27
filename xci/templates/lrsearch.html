@@ -2,38 +2,26 @@
 {% block content %}
 <div class="row">
 	<div class="col-md-12">
-		<form class="form-horizontal" role="form" method="post">
+		<form class="form-horizontal" role="form" id="searchform">
 			{{ search_form.hidden_tag() }}
-				{% for field, errors in search_form.errors.iteritems() %}
-					<div class="alert alert-danger">{{ field }}: {{ ', '.join(errors) }}</div>
-				{% endfor %}
-				{% for field in search_form %}
-				<div class="form-group">
-				{{ field.label(class_='sr-only', for=field.id) }}
-				{{ field(class_='form-control', placeholder=field.name) }}
-				</div>
-				{% endfor %}
+			{% for field in search_form %}
+			<div class="form-group">
+			{{ field.label(class_='sr-only', for=field.id) }}
+			{{ field(class_='form-control', placeholder=field.name) }}
+			</div>
+			{% endfor %}
 			<button type="submit" class="btn btn-default">Search</button>
 		</form>
 	</div>
 </div>
-<br>
-{% if result %}
-<div class="row">
-	<div class="col-md-6">
-		<div id="countdiv">There were <b id="count">{{ result['count'] }}</b> results</div>
-		<ul class="media-list">
-			{% for r in result['data'] %}
-			<li class="media draggable" id="{{ r['_id'] }}">
-				<a class="pull-left" href="{{ r['url'] }}" target="_blank">
-					<img class="media-object" src="{{ r['screenshot'] }}" alt="{{ r['title'] }}" height="180px" width="171px">
-				</a>
-				<div class="media-body">
-					<h4 class="media-heading"><a href="{{ r['url'] }}" target="_blank">{{ r['title'] }}</a></h4>
-					{{  r['description']  }}
-				</div>
-			</li>
-			{% endfor %}
+<div class="row" style="display:none" id="resultsrow">
+	<div class="col-md-6 pagination">
+		<div id="countdiv">There were <b id="count"></b> results</div>
+		<ul class="media-list" id="resultslist">
+		</ul>
+		<ul class="pager">
+			<li id="previousli" class="previous"><a id="previous" href="#">&larr; Previous</a></li>
+			<li id="nextli" class="next"><a id="next" href="#">Next &rarr;</a></li>
 		</ul>
 	</div>
 	<div class="col-md-6">
@@ -57,27 +45,154 @@
 		</div>
 	</div>
 </div>
-{% endif %}
 {% endblock %}
 {% block js %}
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 <script type="text/javascript">
-	$(window).load(function(){
-		$('.draggable').draggable({
-			helper: "clone",
-			revert: "invalid",
-			stop: function(){
-				$(this).draggable('option', 'revert', 'invalid');
-			},
-			zIndex: 10
+	var pages = 0
+	var currentPage = 0
+	var server = "http://72.243.185.28/" 
+	var query = "search?terms="
+	var pageQuery = "&page="
+	var url = server + query
+
+	function processData(data){
+		// Add screenshot to each item
+		$.each(data['data'], function(index, value){
+			value['screenshot'] = server + "screenshot/" + value['_id'];
 		});
-		$('.droppable').droppable({
-			hoverClass: "ui-state-hover",
-			drop: function(event, ui){
-				alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + $(this).attr('id'));
+		return data
+	}
+	function addToResultsList(data){
+		// Add result HTML to the resultslist
+		$.each(data['data'], function(index, value){
+			$('#resultslist').append("<li class='media draggable' id='"+value['_id']+"'>"
+									+ "<a class='pull-left' href='"+value['url']+"' target='_blank'>"
+									+ "<img class='media-object' src='"+value['screenshot']+"' alt='"+value['title']+"' height='180px' width='171px'>"
+									+ "</a>"
+									+ "<div class='media-body'>"
+									+ "<h4 class='media-heading'>"
+									+ "<a href='"+value['url']+"' target='_blank'>"+value['title']+"</a></h4>"
+									+ value['description']+"</div></li>");
+		});
+	}
+
+	$('#searchform').submit(function(event){
+		/*
+		Prevent fire
+		Clear any previous results
+		Hide previous button
+		Get keyword and make query
+		*/
+		event.preventDefault();
+		$('#resultslist').html("")
+		$('#previousli').hide()
+		var keyword = $('input[name=search]', this).val();
+		query = query + keyword;
+		url = server + query
+
+		$.getJSON(url, function(data){
+			data = processData(data)
+			
+			// Set total count and calculate pages
+			num = data['count']
+			$('#count').html(num);
+			pages = (num % 25 == 0) ? num % 25 : Math.floor(num / 25)
+
+			// Set query for next/prev buttons
+			if (pages > 1){
+				$('#next').attr('href', url + pageQuery + (currentPage + 1))
+				$('#previous').attr('href', url + pageQuery + (currentPage - 1))
 			}
+			else{
+				$('#nextli').hide()
+				$('#previousli').hide()
+			}
+
+			// Display the whole row
+			addToResultsList(data)
+			$('#resultsrow').show();
 		});
+	});
+	$('#next').click(function(event){
+		/*
+		Prevent fire
+		Clear any previous results
+		Increment current page
+		*/
+		event.preventDefault();	
+		$('#resultslist').html("")
+		currentPage = currentPage + 1
+
+		// Get href for next button
+		var href = $('#next').attr('href')
+		$.getJSON(href, function(data){
+			data = processData(data)
+
+			// Make sure prev button is shown and decrement it
+			// If current page is at the end - hide next button
+			// Else - increment next button
+			$('#previousli').show()
+			$('#previous').attr('href', url + pageQuery + (currentPage - 1))
+			if (currentPage == pages){
+				$('#nextli').hide()
+			}
+			else{
+				$('#next').attr('href', url + pageQuery + (currentPage + 1))
+			}
+
+			// Display the whole row
+			addToResultsList(data)
+			$('#resultsrow').show();
+		});		
+	});
+	$('#previous').click(function(event){
+		/*
+		Prevent fire
+		Clear any previous results
+		Decrement current page
+		*/
+		event.preventDefault();
+		$('#resultslist').html("")
+		currentPage = currentPage - 1
+
+		// Get href for prev button
+		var href = $('#previous').attr('href')
+		$.getJSON(href, function(data){
+			data = processData(data)
+
+			// Make sure next button is shown and increment it
+			// If current page is first page - hide prev button
+			// Else - decrement prev button
+			$('#nextli').show()
+			$('#next').attr('href', url + pageQuery + (currentPage + 1))
+			if (currentPage == 0){
+				$('#previousli').hide()
+			}
+			else{
+				$('#previous').attr('href', url + pageQuery + (currentPage - 1))				
+			}	
+			
+			// Display the whole row
+			addToResultsList(data)
+			$('#resultsrow').show();
+		});		
+	});
+
+	$('.draggable').draggable({
+		helper: "clone",
+		revert: "invalid",
+		stop: function(){
+			$(this).draggable('option', 'revert', 'invalid');
+		},
+		zIndex: 10
+	});
+	$('.droppable').droppable({
+		hoverClass: "ui-state-hover",
+		drop: function(event, ui){
+			alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + $(this).attr('id'));
+		}
 	});
 </script>
 {% endblock %}
