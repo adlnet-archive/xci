@@ -98,7 +98,7 @@
 			// Set total count and calculate pages
 			num = data['count']
 			$('#count').html(num);
-			pages = (num % 25 == 0) ? num % 25 : Math.floor(num / 25)
+			pages = (num % 25 == 0) ? num / 25 : Math.floor(num / 25)
 
 			// Set query for next/prev buttons
 			if (pages > 1){
