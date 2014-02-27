@@ -15,7 +15,7 @@
 	</div>
 </div>
 <div class="row" style="display:none" id="resultsrow">
-	<div class="col-md-6 pagination">
+	<div class="col-md-6">
 		<div id="countdiv">There were <b id="count"></b> results</div>
 		<ul class="media-list" id="resultslist">
 		</ul>
@@ -25,7 +25,7 @@
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<div style="position:fixed"><!--Keeps comps on page at all times-->
+		<div>
 		{% if current_user.is_authenticated() %}
 		{% for k,v in comps.items() %}
 			<div class="panel panel-default droppable" id="{{ k }}">
@@ -53,9 +53,6 @@
 	var pages = 0
 	var currentPage = 0
 	var server = "http://72.243.185.28/" 
-	var query = "search?terms="
-	var pageQuery = "&page="
-	var url = server + query
 
 	function processData(data){
 		// Add screenshot to each item
@@ -66,6 +63,7 @@
 	}
 	function addToResultsList(data){
 		// Add result HTML to the resultslist
+		// Add draggable to item (won't bind correctly after document ready)
 		$.each(data['data'], function(index, value){
 			$('#resultslist').append("<li class='media draggable' id='"+value['_id']+"'>"
 									+ "<a class='pull-left' href='"+value['url']+"' target='_blank'>"
@@ -75,6 +73,15 @@
 									+ "<h4 class='media-heading'>"
 									+ "<a href='"+value['url']+"' target='_blank'>"+value['title']+"</a></h4>"
 									+ value['description']+"</div></li>");
+			$('#resultslist li').last()
+				.draggable({
+					helper: "clone",
+					revert: "invalid",
+					stop: function(){
+						$(this).draggable('option', 'revert', 'invalid');
+					},
+					zIndex: 10
+			});			
 		});
 	}
 
@@ -88,9 +95,11 @@
 		event.preventDefault();
 		$('#resultslist').html("")
 		$('#previousli').hide()
+		%('#nextli').show()
 		var keyword = $('input[name=search]', this).val();
-		query = query + keyword;
-		url = server + query
+		var query = "search?terms=" + keyword
+		var url = server + query		
+		var pageQuery = "&page="
 
 		$.getJSON(url, function(data){
 			data = processData(data)
@@ -113,6 +122,7 @@
 			// Display the whole row
 			addToResultsList(data)
 			$('#resultsrow').show();
+			$('input[name=search]', this).val('')
 		});
 	});
 	$('#next').click(function(event){
@@ -134,12 +144,12 @@
 			// If current page is at the end - hide next button
 			// Else - increment next button
 			$('#previousli').show()
-			$('#previous').attr('href', url + pageQuery + (currentPage - 1))
+			$('#previous').attr('href', href.substr(0, href.length - 1) + (currentPage - 1))
 			if (currentPage == pages){
 				$('#nextli').hide()
 			}
 			else{
-				$('#next').attr('href', url + pageQuery + (currentPage + 1))
+				$('#next').attr('href', href.substr(0, href.length - 1) + (currentPage + 1))
 			}
 
 			// Display the whole row
@@ -166,12 +176,12 @@
 			// If current page is first page - hide prev button
 			// Else - decrement prev button
 			$('#nextli').show()
-			$('#next').attr('href', url + pageQuery + (currentPage + 1))
+			$('#next').attr('href', href.substr(0, href.length - 1) + (currentPage + 1))
 			if (currentPage == 0){
 				$('#previousli').hide()
 			}
 			else{
-				$('#previous').attr('href', url + pageQuery + (currentPage - 1))				
+				$('#previous').attr('href', href.substr(0, href.length - 1) + (currentPage - 1))				
 			}	
 			
 			// Display the whole row
@@ -180,14 +190,11 @@
 		});		
 	});
 
-	$('.draggable').draggable({
-		helper: "clone",
-		revert: "invalid",
-		stop: function(){
-			$(this).draggable('option', 'revert', 'invalid');
-		},
-		zIndex: 10
-	});
+
+
+	var comps = "{{ comps }}".replace(/u&#39;/g, '')
+
+	// Add droppable to comps (can add here since this HTML is from server)
 	$('.droppable').droppable({
 		hoverClass: "ui-state-hover",
 		drop: function(event, ui){

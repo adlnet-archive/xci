@@ -258,14 +258,4 @@ def lr_search():
         prof = models.getUserProfile(current_user.id)
         comps = prof['competencies']
 
-    # if request.method == 'GET':
     return render_template('lrsearch.html', search_form=SearchForm(), comps=comps)
-    # else:
-    #     sf = SearchForm(request.form)
-    #     query = "search?terms=%s" % sf.search.data
-    #     result = json.loads(requests.get("http://72.243.185.28/" + query).content)
-
-    #     for item in result['data']:
-    #         item['screenshot'] = "http://72.243.185.28/" + "screenshot/" + item['_id']
-
-    #     return render_template('lrsearch.html', search_form=SearchForm(), result=result, comps=comps)
