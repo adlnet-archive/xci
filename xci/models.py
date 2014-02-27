@@ -1,6 +1,8 @@
 from flask_login import UserMixin
 from pymongo import MongoClient
 
+from bson.objectid import ObjectId
+
 mongo = MongoClient()
 db = mongo.xci
 
@@ -8,6 +10,7 @@ class User(UserMixin):
     def __init__(self, userid, password):
         self.id = userid
         self.password = password
+        self.roles = db.userprofiles.find_one({"username": self.id})['roles']
 
     def get_id(self):
         try:
@@ -41,6 +44,11 @@ def getCompetency(uri, objectid=False):
     if objectid:
         return db.competency.find_one({'uri':uri})
     return db.competency.find_one({'uri':uri}, {'_id':0})
+
+def getCompetencyById(cid, objectid=False):
+    if objectid:
+        return db.competency.find_one({'_id': ObjectId(cid)})
+    return db.competency.find_one({'_id': ObjectId(cid)}, {'_id':0})
 
 def findoneComp(d):
     return db.competency.find_one(d)
@@ -90,7 +98,7 @@ def dropAll():
 
 
 
-# from bson.objectid import ObjectId
+# 
 
 # # The web framework gets post_id from the URL and passes it as a string
 # def get(post_id):
