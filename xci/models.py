@@ -1,6 +1,11 @@
 from flask_login import UserMixin
 from pymongo import MongoClient
 
+from bson.objectid import ObjectId
+
+import datetime
+import pytz
+
 mongo = MongoClient()
 db = mongo.xci
 
@@ -8,6 +13,7 @@ class User(UserMixin):
     def __init__(self, userid, password):
         self.id = userid
         self.password = password
+        self.roles = db.userprofiles.find_one({"username": self.id})['roles']
 
     def get_id(self):
         try:
@@ -29,6 +35,8 @@ def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 def saveCompetency(json_comp):
+    if not json_comp.get('lastmodified', False):
+        json_comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
     if getCompetency(json_comp['uri']):
         updateCompetency(json_comp)
     else:
@@ -41,6 +49,15 @@ def getCompetency(uri, objectid=False):
     if objectid:
         return db.competency.find_one({'uri':uri})
     return db.competency.find_one({'uri':uri}, {'_id':0})
+
+def updateCompetencyById(cid, comp):
+    comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
+    db.competency.update({'_id': ObjectId(cid)}, comp, manipulate=False)
+
+def getCompetencyById(cid, objectid=False):
+    if objectid:
+        return db.competency.find_one({'_id': ObjectId(cid)})
+    return db.competency.find_one({'_id': ObjectId(cid)}, {'_id':0})
 
 def findoneComp(d):
     return db.competency.find_one(d)
@@ -85,3 +102,14 @@ def dropCompCollections():
 
 def dropAll():
     return mongo.drop_database(db)
+
+
+
+
+
+# 
+
+# # The web framework gets post_id from the URL and passes it as a string
+# def get(post_id):
+#     # Convert from string to ObjectId:
+#     document = client.db.collection.find_one({'_id': ObjectId(post_id)})

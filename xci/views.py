@@ -1,18 +1,30 @@
 from xci import app, competency
+from functools import wraps
 from flask import render_template, redirect, flash, url_for, request, make_response
-from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm
+from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 import json
 import models
+import requests
+import pdb
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 mongo = MongoClient()
 db = mongo.xci
+
+def check_admin(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        person = current_user
+        if not 'admin' in person.roles:
+            return redirect(url_for('index'))
+        return func(*args, **kwargs)
+    return wrapper
 
 @login_manager.user_loader
 def load_user(user):
@@ -30,21 +42,9 @@ def index():
     if uri:
         p = competency.parseComp(uri)
         try:
-            # resp = make_response(json.dumps(p), 200)
-            # resp.headers['Content-Type'] = "application/json"
-            # # return resp
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
-            # return make_response("fail <br> %s" % repr(p), 200)
-
-    # return '''yay we dids it! 
-    #           <br>DEBUG: %s 
-    #           <br>SECRET: %s
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
-    #           <br><a href="./?uri=http://adlnet.gov/competency-framework/computer-science/basic-programming">programming</a>
-    #           <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>''' % (app.config['DEBUG'], app.config['SECRET_KEY'])
-
     return render_template('home.html')
     
 @app.route('/logout')
@@ -73,10 +73,18 @@ def sign_up():
     else:
         rf = RegistrationForm(request.form)
         if rf.validate_on_submit():
+            role = rf.role.data
+            if role == 'admin':
+                role = ['admin', 'teacher', 'student']
+            elif role == 'teacher':
+                role = ['teacher', 'student']
+            else:
+                role = ['student']
+
             users = db.userprofiles
             users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[]})
-            
+                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 'roles':role})
+
             user = User(rf.username.data, generate_password_hash(rf.password.data))
             login_user(user)
             return redirect(url_for('index'))
@@ -89,7 +97,9 @@ def competencies():
     uview = request.args.get('userview', False)
     if uri:
         d['uri'] = uri
-        d['comp'] = models.getCompetency(uri)
+        comp = models.getCompetency(uri, objectid=True)
+        d['cid'] = comp.pop('_id')
+        d['comp'] = comp
         d['userview'] = uview
         return render_template('comp-details.html', **d)
 
@@ -190,17 +200,6 @@ def add_comp():
 
     return redirect(url_for("me"))
 
-@app.route('/admin/reset', methods=["GET"])
-def reset_all():
-    logout_user()
-    models.dropAll()
-    return redirect(url_for("index"))
-
-@app.route('/admin/reset/comps', methods=["GET"])
-def reset_comps():
-    models.dropCompCollections()
-    return redirect(url_for("index"))
-
 @app.route('/cc')
 def load_cc():
     from xci import commoncore
@@ -267,7 +266,6 @@ def add_endpoint():
         new_prof['password'] = generate_password_hash(af['newpassword'])
         new_prof['default'] = default
 
-
         if default:
             for profile in user['lrsprofiles']:
                 profile['default'] = False
@@ -277,6 +275,65 @@ def add_endpoint():
     
     return redirect(url_for('me'))
 
-@app.route('/lr_search', methods=["GET", "POST"])
+@app.route('/lr_search', methods=["GET"])
 def lr_search():
-    return render_template('lrsearch.html')
+    comps = {}
+    if current_user.is_authenticated():
+        prof = models.getUserProfile(current_user.id)
+        comps = prof['competencies']
+
+    # if request.method == 'GET':
+    return render_template('lrsearch.html', search_form=SearchForm(), comps=comps)
+    # else:
+    #     sf = SearchForm(request.form)
+    #     query = "search?terms=%s" % sf.search.data
+    #     result = json.loads(requests.get("http://72.243.185.28/" + query).content)
+
+    #     for item in result['data']:
+    #         item['screenshot'] = "http://72.243.185.28/" + "screenshot/" + item['_id']
+        # return render_template('lrsearch.html', search_form=SearchForm(), result=result, comps=comps)
+
+@app.route('/admin/reset', methods=["POST"])
+@check_admin
+def reset_all():
+    logout_user()
+    models.dropAll()
+    return redirect(url_for("index"))
+
+@app.route('/admin/reset/comps', methods=["POST"])
+@check_admin
+def reset_comps():
+    models.dropCompCollections()
+    return redirect(url_for("index"))
+
+@app.route('/admin/competency/new', methods=['GET', 'POST'])
+@check_admin
+def new_comp():
+    if request.method == 'GET':
+        return render_template('edit-comp.html', **{'cform': CompetencyEditForm()})
+    else:
+        f = CompetencyEditForm(request.form)
+        if f.validate():
+            models.saveCompetency(f.toDict())
+            return redirect(url_for('competencies', uri=f.uri.data))
+        return render_template('edit-comp.html', **{'cform': f})
+
+@app.route('/admin/competency/edit/<objid>', methods=['GET', 'POST'])
+@check_admin
+def edit_comp(objid):
+    if request.method == 'GET':
+        obj = models.getCompetencyById(objid)
+        return_dict = {'cform': CompetencyEditForm(obj=obj)}
+    else:
+        f = CompetencyEditForm(request.form)
+        valid = f.validate()
+        print 'valid >>> %s' % valid
+        if valid:
+            #add to 
+            # print "json>>>>  %s" % f.toJSON()
+            models.updateCompetencyById(objid, f.toDict())
+            # redirect to comp details
+            return redirect(url_for('competencies', uri=f.uri.data))
+        return_dict = {'cform': f}
+
+    return render_template('edit-comp.html', **return_dict)

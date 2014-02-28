@@ -3,6 +3,14 @@
 <div class="page-header">
 	<h1>Competencies</h1>
 </div>
+{% if 'admin' in current_user.roles %}
+<div class="row">
+    <div class="col-xs-2">
+        <a href="{{ url_for('new_comp') }}" class="btn btn-default">New Competency</a>
+    </div>
+</div>
+<div class="row"><div class="col-xs-12"><hr></div></div>
+{% endif %}
 <p>
 Click links to add competencies..
 <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
