@@ -1,7 +1,7 @@
 from xci import app, competency
 from functools import wraps
 from flask import render_template, redirect, flash, url_for, request, make_response
-from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm
+from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
@@ -294,14 +294,14 @@ def lr_search():
         # return render_template('lrsearch.html', search_form=SearchForm(), result=result, comps=comps)
 
 @app.route('/admin/reset', methods=["GET"])
-@check_admin
+# @check_admin
 def reset_all():
     logout_user()
     models.dropAll()
     return redirect(url_for("index"))
 
 @app.route('/admin/reset/comps', methods=["GET"])
-@check_admin
+# @check_admin
 def reset_comps():
     models.dropCompCollections()
     return redirect(url_for("index"))
@@ -319,14 +319,11 @@ def edit_comp(objid):
     else:
         f = CompetencyEditForm(request.form)
         if f.validate_on_submit():
-            try:
-                #add to 
-                # redirect to comp details
-                # redirect(url_for('competencies', uri=uri))
-                pass
-            except Exception, e:
-                raise e
-        else:
-            return_dict = {'cform': f}
+            #add to 
+            # print "json>>>>  %s" % f.toJSON()
+            models.updateCompetencyById(objid, f.toDict())
+            # redirect to comp details
+            return redirect(url_for('competencies', uri=f.uri.data))
+        return_dict = {'cform': f}
 
     return render_template('edit-comp.html', **return_dict)

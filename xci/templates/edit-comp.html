@@ -1,109 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-header">
-    <h1>{{ comp.title }}
-    {% if current_user.is_authenticated() and not userview %}
-        <small>
-            <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
-            <input type="hidden" name="comp_uri" value="{{ comp.uri }}">
-            <button type="submit" class="btn btn-default">Register</button>
-            </form>
-        </small>
-    {% elif userview and comp.completed %}
-        <small><span class="label label-success">completed</span></small>
-    {% endif %}
-    {% if 'admin' in current_user.roles %}
-        <small><a href="{{ url_for('edit_comp', objid=cid) }}" class="btn btn-default">Edit</a></small>
-    {% endif %}
-    </h1>
-</div>
-<div class="col-xs-12">
-<dl class="dl-horizontal">
-    <dt>uri</dt>
-    <dd>{{ comp.uri }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>description</dt>
-    <dd>{{ comp.description }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>levels</dt>
-    <dd>{{ comp.levels }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>type</dt>
-    <dd>{{ comp.type }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>last modified</dt>
-    <dd>{{ comp.lastmodified }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>ids</dt>
-    <dd>{{ comp.ids }}</dd>
-</dl>
-<dl class="dl-horizontal">
-    <dt>relations</dt>
-    <dd>{{ comp.relations }}</dd>
-</dl>
-</div>
-
 
 
 <form class="form-horizontal" role="form" method="post">
-    {{ signup_form.hidden_tag() }}
-    {% for field, errors in signup_form.errors.iteritems() %}
+    {{ cform.hidden_tag() }}
+    {% for field, errors in cform.errors.iteritems() %}
         <div class="alert alert-danger">{{ field }}: {{ ', '.join(errors) }}</div>
     {% endfor %}    
-    {% for field in signup_form if field.id != 'csrf_token' %}
-    {% if field.type != 'RadioField' %}
-    <div class="form-group">
-    {{ field.label(class_='col-sm-2 control-label', for=field.id) }}
-    <div class="col-sm-10">
-    {{ field(class_='form-control') }}
-    </div>
-    </div>
-    {% else %}
-    <div class="form-group">
-        <div class="col-sm-10">
-        {{ field }}
+    {% for field in cform if field.id != 'csrf_token' %}
+        {% if field.type != 'RadioField' %}
+            <div class="form-group">
+            {{ field.label(class_='col-sm-2 control-label', for=field.id) }}
+            <div class="col-sm-10">
+            {{ field(class_='form-control') }}
+            </div>
+            </div>
+        {% else %}
+            <div class="form-group">
+                <div class="col-sm-10">
+                {{ field(value='{{ field.data }}') }}
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-    {% endif %}
+        {% endif %}
     {% endfor %}
     <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-10"> <button type="submit" class="btn btn-default">Sign Up</button></div>
+        <div class="col-sm-offset-2 col-sm-10"> <button type="submit" class="btn btn-default">Save</button></div>
     </div>
 </form>
 
-
-<form class="form-horizontal" role="form">
-  <div class="form-group">
-    <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
-    <div class="col-sm-10">
-      <input type="email" class="form-control" id="inputEmail3" placeholder="Email">
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inputPassword3" class="col-sm-2 control-label">Password</label>
-    <div class="col-sm-10">
-      <input type="password" class="form-control" id="inputPassword3" placeholder="Password">
-    </div>
-  </div>
-  <div class="form-group">
-    <div class="col-sm-offset-2 col-sm-10">
-      <div class="checkbox">
-        <label>
-          <input type="checkbox"> Remember me
-        </label>
-      </div>
-    </div>
-  </div>
-  <div class="form-group">
-    <div class="col-sm-offset-2 col-sm-10">
-      <button type="submit" class="btn btn-default">Sign in</button>
-    </div>
-  </div>
-</form>
 {% endblock %}

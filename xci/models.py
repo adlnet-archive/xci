@@ -3,6 +3,9 @@ from pymongo import MongoClient
 
 from bson.objectid import ObjectId
 
+import datetime
+import pytz
+
 mongo = MongoClient()
 db = mongo.xci
 
@@ -44,6 +47,10 @@ def getCompetency(uri, objectid=False):
     if objectid:
         return db.competency.find_one({'uri':uri})
     return db.competency.find_one({'uri':uri}, {'_id':0})
+
+def updateCompetencyById(cid, comp):
+    comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
+    db.competency.update({'_id': ObjectId(cid)}, comp, manipulate=False)
 
 def getCompetencyById(cid, objectid=False):
     if objectid:
