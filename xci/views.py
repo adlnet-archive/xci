@@ -326,7 +326,9 @@ def edit_comp(objid):
         return_dict = {'cform': CompetencyEditForm(obj=obj)}
     else:
         f = CompetencyEditForm(request.form)
-        if f.validate():
+        valid = f.validate()
+        print 'valid >>> %s' % valid
+        if valid:
             #add to 
             # print "json>>>>  %s" % f.toJSON()
             models.updateCompetencyById(objid, f.toDict())
