@@ -10,13 +10,6 @@ mongo = MongoClient()
 db = mongo.xci
 
 def validateURI(form, field):
-    # import pdb
-    # pdb.set_trace()
-    # try: 
-    #     parse(field.data, rule='IRI')
-    #     return True
-    # except:
-    #     return False
     parse(field.data, rule='IRI')
 
 class LoginForm(Form):
