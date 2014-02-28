@@ -310,10 +310,10 @@ def reset_comps():
 @check_admin
 def new_comp():
     if request.method == 'GET':
-        return render_template('edit_comp.html', **{'cform': CompetencyEditForm()})
+        return render_template('edit-comp.html', **{'cform': CompetencyEditForm()})
     else:
         f = CompetencyEditForm(request.form)
-        if f.validate_on_submit():
+        if f.validate():
             models.saveCompetency(f.toDict())
             return redirect(url_for('competencies', uri=f.uri.data))
         return render_template('edit-comp.html', **{'cform': f})
@@ -326,7 +326,7 @@ def edit_comp(objid):
         return_dict = {'cform': CompetencyEditForm(obj=obj)}
     else:
         f = CompetencyEditForm(request.form)
-        if f.validate_on_submit():
+        if f.validate():
             #add to 
             # print "json>>>>  %s" % f.toJSON()
             models.updateCompetencyById(objid, f.toDict())

@@ -35,6 +35,8 @@ def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 def saveCompetency(json_comp):
+    if not json_comp.get('lastmodified', False):
+        json_comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
     if getCompetency(json_comp['uri']):
         updateCompetency(json_comp)
     else:
