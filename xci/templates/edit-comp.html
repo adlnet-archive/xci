@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-
-
 <form class="form-horizontal" role="form" method="post">
     {{ cform.hidden_tag() }}
     {% for field, errors in cform.errors.iteritems() %}
@@ -28,5 +26,4 @@
         <div class="col-sm-offset-2 col-sm-10"> <button type="submit" class="btn btn-default">Save</button></div>
     </div>
 </form>
-
 {% endblock %}

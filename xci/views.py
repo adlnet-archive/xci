@@ -293,26 +293,34 @@ def lr_search():
     #         item['screenshot'] = "http://72.243.185.28/" + "screenshot/" + item['_id']
         # return render_template('lrsearch.html', search_form=SearchForm(), result=result, comps=comps)
 
-@app.route('/admin/reset', methods=["GET"])
-# @check_admin
+@app.route('/admin/reset', methods=["POST"])
+@check_admin
 def reset_all():
     logout_user()
     models.dropAll()
     return redirect(url_for("index"))
 
-@app.route('/admin/reset/comps', methods=["GET"])
-# @check_admin
+@app.route('/admin/reset/comps', methods=["POST"])
+@check_admin
 def reset_comps():
     models.dropCompCollections()
     return redirect(url_for("index"))
 
+@app.route('/admin/competency/new', methods=['GET', 'POST'])
+@check_admin
+def new_comp():
+    if request.method == 'GET':
+        return render_template('edit_comp.html', **{'cform': CompetencyEditForm()})
+    else:
+        f = CompetencyEditForm(request.form)
+        if f.validate_on_submit():
+            models.saveCompetency(f.toDict())
+            return redirect(url_for('competencies', uri=f.uri.data))
+        return render_template('edit-comp.html', **{'cform': f})
+
 @app.route('/admin/competency/edit/<objid>', methods=['GET', 'POST'])
 @check_admin
 def edit_comp(objid):
-    
-    # resp = make_response(json.dumps(models.getCompetencyById(objid)), 200)
-    # resp.headers['Content-Type'] = "application/json"
-    # return resp
     if request.method == 'GET':
         obj = models.getCompetencyById(objid)
         return_dict = {'cform': CompetencyEditForm(obj=obj)}
