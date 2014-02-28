@@ -25,20 +25,13 @@
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<div>
+		<div id="user_comps">
 		{% if current_user.is_authenticated() %}
-		{% for k,v in comps.items() %}
-			<div class="panel panel-default droppable" id="{{ k }}">
-				<div class="panel-heading">
-					<h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{v.uri}}">{{ v.title }}</a></h3>
-				</div>
-				<div class="panel-body">
-					<p>{{ v.description }}</p>
-				</div>
-			</div>
-		{% else %}
-		You have no competencies!
-		{% endfor %}
+		<!--Javascript fills this in-->
+		<ul class="pager" id="comp_pager">
+			<li id="cpreviousli" class="previous"><a id="previous" href="#">&larr; Previous</a></li>
+			<li id="cnextli" class="next"><a id="next" href="#">Next &rarr;</a></li>
+		</ul>
 		{% else %}
 		Must be logged in to link results!
 		{% endif %}
@@ -50,6 +43,7 @@
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 <script type="text/javascript">
+	var SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
 	var pages = 0
 	var currentPage = 0
 	var server = "http://72.243.185.28/" 
@@ -81,7 +75,7 @@
 						$(this).draggable('option', 'revert', 'invalid');
 					},
 					zIndex: 10
-			});			
+				});			
 		});
 	}
 
@@ -95,7 +89,7 @@
 		event.preventDefault();
 		$('#resultslist').html("")
 		$('#previousli').hide()
-		%('#nextli').show()
+		$('#nextli').show()
 		var keyword = $('input[name=search]', this).val();
 		var query = "search?terms=" + keyword
 		var url = server + query		
@@ -190,16 +184,35 @@
 		});		
 	});
 
+	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""))
+	if ($.isEmptyObject(comps)){
+		$('#user_comps').append("You have no competencies!")
+		$('#comp_pager').hide()
+	}
+	else{
 
+		var total = Object.keys(comps).length;
+		var cpages = (total % 25 == 0) ? total / 25 : Math.floor(total / 25)
 
-	var comps = "{{ comps }}".replace(/u&#39;/g, '')
+		
 
-	// Add droppable to comps (can add here since this HTML is from server)
-	$('.droppable').droppable({
-		hoverClass: "ui-state-hover",
-		drop: function(event, ui){
-			alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + $(this).attr('id'));
-		}
-	});
+		$.each(comps, function(k, v){
+			$('#user_comps').append("<div class='panel panel-default droppable' id='"+k+"'>"
+									+ "<div class='panel-heading>"
+									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+'competencies'+"?uri="+v.uri+"'>"+v.title+"</a></h3>"
+									+ "</div"
+									+ "<div class='panel-body'>"
+									+ "<p>"+v.description+"</p></div>");
+			$('#user_comps div').last()
+				.droppable({
+					hoverClass: "ui-state-hover",
+					drop: function(event, ui){
+						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + k);
+					}
+				});
+		});
+
+		$('#comp_pager').show()
+	}
 </script>
 {% endblock %}
