@@ -14,23 +14,26 @@
 		</form>
 	</div>
 </div>
+<br/>
 <div class="row" style="display:none" id="resultsrow">
 	<div class="col-md-6">
 		<div id="countdiv">There were <b id="count"></b> results</div>
 		<ul class="media-list" id="resultslist">
 		</ul>
-		<ul class="pager">
-			<li id="previousli" class="previous"><a id="previous" href="#">&larr; Previous</a></li>
-			<li id="nextli" class="next"><a id="next" href="#">Next &rarr;</a></li>
+		<ul class="pager" id="resultPager">
+			<li id="resultPreviousLi" class="previous"><a id="resultPreviousA" href="#">&larr; Previous</a></li>
+			<li id="resultNextLi" class="next"><a id="resultNextA" href="#">Next &rarr;</a></li>
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<div id="user_comps">
+		<div>
 		{% if current_user.is_authenticated() %}
+		<div id="userComps">
 		<!--Javascript fills this in-->
-		<ul class="pager" id="comp_pager">
-			<li id="cpreviousli" class="previous"><a id="previous" href="#">&larr; Previous</a></li>
-			<li id="cnextli" class="next"><a id="next" href="#">Next &rarr;</a></li>
+		</div>
+		<ul class="pager" id="compPager">
+			<li id="compPreviousLi" class="previous"><a id="compPreviousA" href="#">&larr; Previous</a></li>
+			<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
 		</ul>
 		{% else %}
 		Must be logged in to link results!
@@ -43,10 +46,64 @@
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 <script type="text/javascript">
+	//Start of everything automatically ran once page loads
+	/*
+	Safe root to use
+	Initialize resultPages and resultCurrentPage
+	Set server to retrieve LR data
+	Get comps from local server
+	*/
 	var SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-	var pages = 0
-	var currentPage = 0
-	var server = "http://72.243.185.28/" 
+	var resultPages = 0;
+	var resultCurrentPage = 0;
+	var server = "http://72.243.185.28/";
+	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""));
+
+	// If there are no comps hide the pager
+	if ($.isEmptyObject(comps)){
+		$('#userComps').append("You have no competencies!");
+		$('#compPager').hide();
+	}
+	else{
+		/*
+		Set the comp limit per page
+		Get all of the comp keys into a list and get length
+		Initialize compPages and compCurrentPage
+		*/
+		var COMP_PAGE_LIMIT = 5;
+		var compKeys = new Array();
+		for(var k in comps) compKeys.push(k);
+		var compTotal = compKeys.length;
+		var compPages = 0;
+		var compCurrentPage = 0;
+		
+		// If user has more comps that can fit on one page - calculate how many pages needed
+		if (compTotal > COMP_PAGE_LIMIT){
+			compPages = (compTotal % COMP_PAGE_LIMIT == 0) ? compTotal / COMP_PAGE_LIMIT : Math.floor(compTotal / COMP_PAGE_LIMIT);
+		}
+
+		// Create large array that will hold arrays of comp ids for each page
+		var bigArray = new Array();
+		for(i=0; i<=compPages*COMP_PAGE_LIMIT; i+=COMP_PAGE_LIMIT){
+			try{
+				// Push array of 5 comp keys into big array
+				bigArray.push(compKeys.slice(i, (i + COMP_PAGE_LIMIT)));
+			}
+			catch(err){
+				// This happens at the end of comp list, just push the remaining comp keys
+				bigArray.push(compKeys.slice(i, (compTotal - 1)));
+			}
+		}
+		// Add the first comp list to the DOM
+		addComps(bigArray[0])
+
+		// If there is more than one page of comps - set the href for the compNext link and hide the compPrevious button
+		if (compPages > 0){
+			$('#compNextA').attr('href', compCurrentPage + 1)
+			$('#compPreviousLi').hide()		
+		}
+	}
+	//End of everything automatically ran after page loads
 
 	function processData(data){
 		// Add screenshot to each item
@@ -78,6 +135,28 @@
 				});			
 		});
 	}
+	function addComps(array){
+		// Clear userComps div
+		$('#userComps').html("")
+
+		// For each comp id in the array - add that data to the DOM and add droppable functionality
+		$.each(array, function(index, value){
+			comp = comps[value]
+			$('#userComps').append("<div class='panel panel-default droppable' id='"+value+"'>"
+									+ "<div class='panel-heading>"
+									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+comp.uri+"'>"+comp.title+"</a></h3>"
+									+ "</div"
+									+ "<div class='panel-body'>"
+									+ "<p>"+comp.description+"</p></div>");
+			$('#userComps div').last()
+				.droppable({
+					hoverClass: "ui-state-hover",
+					drop: function(event, ui){
+						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + value);
+					}
+				});
+		});
+	}
 
 	$('#searchform').submit(function(event){
 		/*
@@ -87,30 +166,30 @@
 		Get keyword and make query
 		*/
 		event.preventDefault();
-		$('#resultslist').html("")
-		$('#previousli').hide()
-		$('#nextli').show()
+		$('#resultslist').html("");
+		$('#resultPreviousLi').hide();
+		$('#resultNextLi').show();
 		var keyword = $('input[name=search]', this).val();
-		var query = "search?terms=" + keyword
-		var url = server + query		
-		var pageQuery = "&page="
+		var query = "search?terms=" + keyword;
+		var url = server + query;		
+		var pageQuery = "&page=";
 
 		$.getJSON(url, function(data){
 			data = processData(data)
 			
-			// Set total count and calculate pages
+			// Set compTotal count and calculate pages
 			num = data['count']
 			$('#count').html(num);
-			pages = (num % 25 == 0) ? num / 25 : Math.floor(num / 25)
+			resultPages = (num % 25 == 0) ? num / 25 : Math.floor(num / 25)
 
 			// Set query for next/prev buttons
-			if (pages > 1){
-				$('#next').attr('href', url + pageQuery + (currentPage + 1))
-				$('#previous').attr('href', url + pageQuery + (currentPage - 1))
+			if (resultPages > 1){
+				$('#resultNextLi').attr('href', url + pageQuery + (resultCurrentPage + 1))
+				$('#resultPreviousA').attr('href', url + pageQuery + (resultCurrentPage - 1))
 			}
 			else{
-				$('#nextli').hide()
-				$('#previousli').hide()
+				$('#resultNextLi').hide()
+				$('#resultPreviousLi').hide()
 			}
 
 			// Display the whole row
@@ -119,31 +198,31 @@
 			$('input[name=search]', this).val('')
 		});
 	});
-	$('#next').click(function(event){
+	$('#resultNextLi').click(function(event){
 		/*
 		Prevent fire
 		Clear any previous results
 		Increment current page
 		*/
 		event.preventDefault();	
-		$('#resultslist').html("")
-		currentPage = currentPage + 1
+		$('#resultslist').html("");
+		resultCurrentPage++;
 
 		// Get href for next button
-		var href = $('#next').attr('href')
+		var href = $('#resultNextLi').attr('href');
 		$.getJSON(href, function(data){
 			data = processData(data)
 
 			// Make sure prev button is shown and decrement it
 			// If current page is at the end - hide next button
 			// Else - increment next button
-			$('#previousli').show()
-			$('#previous').attr('href', href.substr(0, href.length - 1) + (currentPage - 1))
-			if (currentPage == pages){
-				$('#nextli').hide()
+			$('#resultPreviousLi').show()
+			$('#resultPreviousA').attr('href', href.substr(0, href.length - 1) + (resultCurrentPage - 1))
+			if (resultCurrentPage == resultPages){
+				$('#resultNextLi').hide()
 			}
 			else{
-				$('#next').attr('href', href.substr(0, href.length - 1) + (currentPage + 1))
+				$('#resultNextLi').attr('href', href.substr(0, href.length - 1) + (resultCurrentPage + 1))
 			}
 
 			// Display the whole row
@@ -151,31 +230,31 @@
 			$('#resultsrow').show();
 		});		
 	});
-	$('#previous').click(function(event){
+	$('#resultPreviousA').click(function(event){
 		/*
 		Prevent fire
 		Clear any previous results
 		Decrement current page
 		*/
 		event.preventDefault();
-		$('#resultslist').html("")
-		currentPage = currentPage - 1
+		$('#resultslist').html("");
+		resultCurrentPage--;
 
 		// Get href for prev button
-		var href = $('#previous').attr('href')
+		var href = $('#resultPreviousA').attr('href')
 		$.getJSON(href, function(data){
 			data = processData(data)
 
 			// Make sure next button is shown and increment it
 			// If current page is first page - hide prev button
 			// Else - decrement prev button
-			$('#nextli').show()
-			$('#next').attr('href', href.substr(0, href.length - 1) + (currentPage + 1))
-			if (currentPage == 0){
-				$('#previousli').hide()
+			$('#resultNextLi').show()
+			$('#resultNextLi').attr('href', href.substr(0, href.length - 1) + (resultCurrentPage + 1))
+			if (resultCurrentPage == 0){
+				$('#resultPreviousLi').hide()
 			}
 			else{
-				$('#previous').attr('href', href.substr(0, href.length - 1) + (currentPage - 1))				
+				$('#resultPreviousA').attr('href', href.substr(0, href.length - 1) + (resultCurrentPage - 1))				
 			}	
 			
 			// Display the whole row
@@ -183,36 +262,51 @@
 			$('#resultsrow').show();
 		});		
 	});
+	$('#compNextA').click(function(event){
+		/*
+		Prevent fire
+		Add new page of comps to div
+		Increment comp page
+		*/
+		event.preventDefault();
+		addComps(bigArray[$('#compNextA').attr('href')])
+		compCurrentPage++
 
-	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""))
-	if ($.isEmptyObject(comps)){
-		$('#user_comps').append("You have no competencies!")
-		$('#comp_pager').hide()
-	}
-	else{
+		// Decrement previous link and show previous button
+		$('#compPreviousA').attr('href', compCurrentPage - 1)
+		$('#compPreviousLi').show()
 
-		var total = Object.keys(comps).length;
-		var cpages = (total % 25 == 0) ? total / 25 : Math.floor(total / 25)
+		// If compCurrentPage equals total comp pages hide next button
+		// Else increment page for next link
+		if (compCurrentPage == compPages){
+			$('#compNextLi').hide()
+		}
+		else{
+			$('#compNextA').attr('href', compCurrentPage + 1)
+		}
+	});
+	$('#compPreviousA').click(function(event){
+		/*
+		Prevent fire
+		Add new page ofcomps to div
+		Decrement comp page
+		*/
+		event.preventDefault();		
+		addComps(bigArray[$('#compPreviousA').attr('href')])
+		compCurrentPage--
 
-		
+		// Increment next link and show next button
+		$('#compNextA').attr('href', compCurrentPage + 1)
+		$('#compNextLi').show()
 
-		$.each(comps, function(k, v){
-			$('#user_comps').append("<div class='panel panel-default droppable' id='"+k+"'>"
-									+ "<div class='panel-heading>"
-									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+'competencies'+"?uri="+v.uri+"'>"+v.title+"</a></h3>"
-									+ "</div"
-									+ "<div class='panel-body'>"
-									+ "<p>"+v.description+"</p></div>");
-			$('#user_comps div').last()
-				.droppable({
-					hoverClass: "ui-state-hover",
-					drop: function(event, ui){
-						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + k);
-					}
-				});
-		});
-
-		$('#comp_pager').show()
-	}
+		// If compCurrentPage equals 0 hide previous button
+		// Else decrement page for previous link
+		if (compCurrentPage == 0){
+			$('#compPreviousLi').hide()
+		}
+		else{
+			$('#compPreviousA').attr('href', compCurrentPage - 1)
+		}
+	});
 </script>
 {% endblock %}
