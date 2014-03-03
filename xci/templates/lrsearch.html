@@ -97,9 +97,14 @@
 		addComps(bigArray[0])
 
 		// If there is more than one page of comps - set the href for the compNext link and hide the compPrevious button
+		// Else hide the comp next/prev buttons
 		if (compPages > 0){
 			$('#compNextA').attr('href', compCurrentPage + 1)
-			$('#compPreviousLi').hide()		
+			$('#compPreviousLi').hide()
+		}
+		else{
+			$('#compNextLi').hide()
+			$('#compPreviousLi').hide()
 		}
 	}
 	//End of everything automatically ran after page loads
