@@ -50,13 +50,13 @@
 	/*
 	Safe root to use
 	Initialize resultPages and resultCurrentPage
-	Set server to retrieve LR data
-	Get comps from local server
+	Set LR_SERVER to retrieve LR data
+	Get comps from local LR_SERVER
 	*/
 	var SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	var LR_SERVER = "http://72.243.185.28/";
 	var resultPages = 0;
 	var resultCurrentPage = 0;
-	var server = "http://72.243.185.28/";
 	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""));
 
 	// If there are no comps hide the pager
@@ -108,7 +108,7 @@
 	function processData(data){
 		// Add screenshot to each item
 		$.each(data['data'], function(index, value){
-			value['screenshot'] = server + "screenshot/" + value['_id'];
+			value['screenshot'] = LR_SERVER + "screenshot/" + value['_id'];
 		});
 		return data
 	}
@@ -171,7 +171,7 @@
 		$('#resultNextLi').show();
 		var keyword = $('input[name=search]', this).val();
 		var query = "search?terms=" + keyword;
-		var url = server + query;		
+		var url = LR_SERVER + query;		
 		var pageQuery = "&page=";
 
 		$.getJSON(url, function(data){
