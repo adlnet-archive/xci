@@ -120,6 +120,7 @@ def getComponents(xmlbit):
             co = {}
             co['entry'] = comp.find('rdf:Description', namespaces=mb_namespaces).attrib.values()[0].strip()
             co['type'] = comp.find('rdf:Type', namespaces=mb_namespaces).attrib.values()[0].strip()
+            parseComp(co['entry'])
             c['competencies'].append(co)
         for pl in compo.findall('pf:PerformanceLevelSet/pf:PerformanceLevel', namespaces=mb_namespaces):
             if not c.get('performancelevels'):

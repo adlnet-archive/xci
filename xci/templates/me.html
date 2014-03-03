@@ -1,47 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="row">
-	<div class="col-xs-12">
-		<div class="page-header">
-			<h1>{{ current_user.id }}</h1>
-			<br>
-			<small>{{ name }}</small>
-			<br>
-			<small>{{ email }}</small>
-			<br>
-			<small>You have achieved {{ completed }} competencies. You are currently working on {{ started }} other competencies</small>
-			<br>
-			<small><a href="{{ url_for('me_settings') }}">Settings</a></small>
-		</div>
-	</div>
+    <div class="col-xs-12">
+        <div class="page-header">
+            <h1>{{ current_user.id }}</h1>
+            <br>
+            <small>{{ name }}</small>
+            <br>
+            <small>{{ email }}</small>
+            <br>
+            <small>You have achieved {{ completed }} competencies. You are currently working on {{ started }} other competencies</small>
+            <br>
+            <small><a href="{{ url_for('me_settings') }}">Settings</a></small>
+        </div>
+    </div>
 </div>
 <div class="row">
-	{% for comp in comps %}
-	<div class="col-xs-12">
-		{% if comp.met %}
-			<div class="panel panel-success">
-				<div class="panel-heading">
-					<h3 class="panel-title">{{ comp.title }}</h3>
-				</div>
-				<div class="panel-body">
-					<p>{{ comp.description }}</p>
-					<p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
-				</div>
-			</div>
-		{% else %}
-			<div class="panel panel-default">
-				<div class="panel-heading">
-					<h3 class="panel-title">{{ comp.title }}</h3>
-				</div>
-				<div class="panel-body">
-					<p>{{ comp.description }}</p>
-					<p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
-				</div>
-			</div>
-		{% endif %}
-	</div>
-	{% else %}
-	<div class="col-xs-12">You have no competencies yet!</div>
-	{% endfor %}
+    <h4>Competencies</h4>
+    {% for comp in comps %}
+    <div class="col-xs-12">
+        {% if comp.met %}
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ comp.title }}</h3>
+                </div>
+                <div class="panel-body">
+                    <p>{{ comp.description }}</p>
+                    <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
+                </div>
+            </div>
+        {% else %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ comp.title }}</h3>
+                </div>
+                <div class="panel-body">
+                    <p>{{ comp.description }}</p>
+                    <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="col-xs-12">You have no competencies yet!</div>
+    {% endfor %}
+</div>
+<div class="row">
+    <h4>Competency Frameworks</h4>
+    {% for cfwk in fwks %}
+    <div class="col-xs-12">
+        {% if cfwk.met %}
+        <div class="panel panel-success">
+        {% else %}
+        <div class="panel panel-default">
+        {% endif %}
+            <div class="panel-heading">
+                <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}&userview=true">{{ cfwk.title }}</a></h3>
+            </div>
+            <div class="panel-body">
+                <p>{{ cfwk.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-xs-12">No frameworks added to the system yet!</div>
+    {% endfor %}
+</div>
+<div class="row">
+    <h4>Performance Frameworks</h4>
+    {% for pfwk in pfwks %}
+    <div class="col-xs-12">
+        {% if pfwk.met %}
+        <div class="panel panel-success">
+        {% else %}
+        <div class="panel panel-default">
+        {% endif %}
+            <div class="panel-heading">
+                <h3 class="panel-title"><a href="{{ url_for('perfwks') }}?uri={{pfwk.uri}}&userview=true">{{ pfwk.title }}</a></h3>
+            </div>
+            <div class="panel-body">
+                <p>{{ pfwk.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-xs-12">No performance frameworks added to the system yet!</div>
+    {% endfor %}
 </div>
 {% endblock %}

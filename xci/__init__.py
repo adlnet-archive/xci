@@ -11,7 +11,4 @@ def config_app(config_filename=None):
 
     import xci.views
 
-    from xci import commoncore
-    commoncore.getCommonCore()
-
     return app
