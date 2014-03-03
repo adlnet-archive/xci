@@ -27,7 +27,8 @@
 	</div>
 	<div class="col-md-6">
 		<div>
-		{% if current_user.is_authenticated() %}
+		<!--If user is admin they'll have the teacher role as well-->
+		{% if 'teacher' in current_user.roles %}
 		<div id="userComps">
 		<!--Javascript fills this in-->
 		</div>
@@ -36,7 +37,7 @@
 			<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
 		</ul>
 		{% else %}
-		Must be logged in to link results!
+		Must be a teacher or admin to link LR results to competencies!
 		{% endif %}
 		</div>
 	</div>
@@ -51,7 +52,7 @@
 	Safe root to use
 	Initialize resultPages and resultCurrentPage
 	Set LR_SERVER to retrieve LR data
-	Get comps from local LR_SERVER
+	Get comps from local server
 	*/
 	var SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
 	var LR_SERVER = "http://72.243.185.28/";
@@ -60,8 +61,8 @@
 	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""));
 
 	// If there are no comps hide the pager
-	if ($.isEmptyObject(comps)){
-		$('#userComps').append("You have no competencies!");
+	if (comps.length === 0){
+		$('#userComps').append("There are no competencies in the system!");
 		$('#compPager').hide();
 	}
 	else{
@@ -71,9 +72,7 @@
 		Initialize compPages and compCurrentPage
 		*/
 		var COMP_PAGE_LIMIT = 5;
-		var compKeys = new Array();
-		for(var k in comps) compKeys.push(k);
-		var compTotal = compKeys.length;
+		var compTotal = comps.length;
 		var compPages = 0;
 		var compCurrentPage = 0;
 		
@@ -87,11 +86,11 @@
 		for(i=0; i<=compPages*COMP_PAGE_LIMIT; i+=COMP_PAGE_LIMIT){
 			try{
 				// Push array of 5 comp keys into big array
-				bigArray.push(compKeys.slice(i, (i + COMP_PAGE_LIMIT)));
+				bigArray.push(comps.slice(i, (i + COMP_PAGE_LIMIT)));
 			}
 			catch(err){
 				// This happens at the end of comp list, just push the remaining comp keys
-				bigArray.push(compKeys.slice(i, (compTotal - 1)));
+				bigArray.push(comps.slice(i, (compTotal - 1)));
 			}
 		}
 		// Add the first comp list to the DOM
@@ -139,20 +138,19 @@
 		// Clear userComps div
 		$('#userComps').html("")
 
-		// For each comp id in the array - add that data to the DOM and add droppable functionality
+		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			comp = comps[value]
-			$('#userComps').append("<div class='panel panel-default droppable' id='"+value+"'>"
+			$('#userComps').append("<div class='panel panel-default droppable' id='"+value.id+"'>"
 									+ "<div class='panel-heading>"
-									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+comp.uri+"'>"+comp.title+"</a></h3>"
+									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
 									+ "</div"
 									+ "<div class='panel-body'>"
-									+ "<p>"+comp.description+"</p></div>");
+									+ "<p>"+value.description+"</p></div>");
 			$('#userComps div').last()
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + value);
+						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + value.id);
 					}
 				});
 		});

@@ -21,7 +21,6 @@ def check_admin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         person = current_user
-        pdb.set_trace()
         if not 'admin' in person.roles:
             return redirect(url_for('index'))
         return func(*args, **kwargs)
@@ -278,10 +277,11 @@ def add_endpoint():
 
 @app.route('/lr_search', methods=["GET"])
 def lr_search():
-    comps = {}
-    if current_user.is_authenticated():
-        prof = models.getUserProfile(current_user.id)
-        comps = prof['competencies']
+    comps = models.findCompetencies()
+    for c in comps:
+        c['id'] = str(c['_id'])
+        del c['_id']
+
     return render_template('lrsearch.html', search_form=SearchForm(), comps=comps)
 
 @app.route('/admin/reset', methods=["POST"])

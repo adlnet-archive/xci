@@ -1,4 +1,3 @@
-from math import ceil
 from flask_login import UserMixin
 from pymongo import MongoClient
 
