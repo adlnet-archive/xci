@@ -135,13 +135,13 @@ def getComponents(xmlbit):
     return obj
 
 def getEntry(xml):
-    return xml.find('lom:lom/lom:general/lom:identifier/lom:entry', namespaces=mb_namespaces).text.strip()
+    return xml.find('lom:lom/lom:general/lom:identifier/lom:entry', namespaces=mb_namespaces).text.strip().decode()
 
 def getTitle(xml):
-    return xml.find('lom:lom/lom:general/lom:title/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip()
+    return xml.find('lom:lom/lom:general/lom:title/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip().decode()
 
 def getDescription(xml):
-    return xml.find('lom:lom/lom:general/lom:description/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip()
+    return xml.find('lom:lom/lom:general/lom:description/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip().decode()
 
 def addXMLSuffix(url):
     if url.endswith('.xml'):

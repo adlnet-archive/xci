@@ -31,7 +31,8 @@ def getCommonCore():
             return None
         
         try:
-            saveCCXMLinDB(ET.fromstring(res))
+            saveCCXMLinDB(ET.XML(res, parser=ET.XMLParser(encoding='utf-8')))
+            # saveCCXMLinDB(ET.fromstring(res))
         except Exception, e:
             print e
             return None
