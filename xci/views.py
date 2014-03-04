@@ -17,6 +17,9 @@ login_manager.init_app(app)
 mongo = MongoClient()
 db = mongo.xci
 
+LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
+
+
 def check_admin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -277,12 +280,23 @@ def add_endpoint():
 
 @app.route('/lr_search', methods=["GET"])
 def lr_search():
-    comps = models.findCompetencies()
+    comps = models.findCompetencies(sort='title')
     for c in comps:
         c['id'] = str(c['_id'])
         del c['_id']
-
     return render_template('lrsearch.html', search_form=SearchForm(), comps=comps)
+
+@app.route('/link_lr_data', methods=['POST'])
+def link_lr_data():
+    lr_uri = request.form['lr_uri']
+    c_id = request.form['c_id']
+
+    try:
+        models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
+    except Exception, e:
+        return e.message
+    return "Successfully linked"
+
 
 @app.route('/admin/reset', methods=["POST"])
 @check_admin
