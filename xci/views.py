@@ -104,7 +104,11 @@ def competencies():
         d['comp'] = comp
         d['userview'] = uview
         if mb:
-            return Response(mbc.toXML(comp), mimetype='text/xml')
+            if competency.isMB(comp):
+                thexml = requests.get(competency.addXMLSuffix(comp['uri'])).text
+            else:
+                thexml = mbc.toXML(comp)
+            return Response(thexml, mimetype='text/xml')
             # return render_template('comp-mb-edit.html', **d)
         else:
             return render_template('comp-details.html', **d)

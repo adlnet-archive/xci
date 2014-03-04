@@ -18,8 +18,18 @@ MB_COMP_TYPE = 'http://ns.medbiq.org/competencyobject/v1/'
 MB_COMP_FWK_TYPE = 'http://ns.medbiq.org/competencyframework/v1/'
 MB_PER_FWK_TYPE = 'http://ns.medbiq.org/performanceframework/v1/'
 
+def isMB(comp_json):
+    return (comp_json.get('type', '') == MB_COMP_TYPE) or \
+           (comp_json.get('type', '') == MB_COMP_FWK_TYPE) or \
+           (comp_json.get('type', '') == MB_PER_FWK_TYPE)
+
 def get_all_comp_frameworks():
     return []
+
+def getXML(uri):
+    res = requests.get(addXMLSuffix(copy.copy(uri))).text
+    # xmlbit = ET.fromstring(res)
+    return ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
 
 def parseComp(uri):
     types = {'{http://ns.medbiq.org/competencyframework/v1/}CompetencyFramework' : 
@@ -29,8 +39,10 @@ def parseComp(uri):
             '{http://ns.medbiq.org/performanceframework/v1/}PerformanceFramework' : 
                 {'parser': parseMedBiqPerfXML, 'getmodel': models.getPerformanceFramework} }
     # url = uri
-    res = requests.get(addXMLSuffix(copy.copy(uri))).text
-    xmlbit = ET.fromstring(res)
+    # res = requests.get(addXMLSuffix(copy.copy(uri))).text
+    # xmlbit = ET.fromstring(res)
+    # xmlbit = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
+    xmlbit = getXML(uri)
     existing = types[xmlbit.tag]['getmodel'](uri)
     if existing:
         existing.pop('_id', False)
@@ -50,8 +62,11 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
     for include in xmlbit.findall('cf:Includes', namespaces=mb_namespaces):
         if not obj.get('competencies', False):
             obj['competencies'] = []
-        url = addXMLSuffix(include.find('cf:Entry', namespaces=mb_namespaces).text.strip())
-        nxt = ET.fromstring(requests.get(url).text)
+        # url = addXMLSuffix(include.find('cf:Entry', namespaces=mb_namespaces).text.strip())
+        # nxt = ET.fromstring(requests.get(url).text)
+        # nxt = ET.XML(requests.get(url).text, parser=ET.XMLParser(encoding='utf-8'))
+        uri = include.find('cf:Entry', namespaces=mb_namespaces).text.strip()
+        nxt = getXML(uri)
         c = parseMedBiqCompXML(nxt, obj['uri'])
         obj['competencies'].append(c)
         obj = addChild(obj, c['uri'])
@@ -135,13 +150,13 @@ def getComponents(xmlbit):
     return obj
 
 def getEntry(xml):
-    return xml.find('lom:lom/lom:general/lom:identifier/lom:entry', namespaces=mb_namespaces).text.strip().decode()
+    return xml.find('lom:lom/lom:general/lom:identifier/lom:entry', namespaces=mb_namespaces).text.strip()
 
 def getTitle(xml):
-    return xml.find('lom:lom/lom:general/lom:title/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip().decode()
+    return xml.find('lom:lom/lom:general/lom:title/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip()
 
 def getDescription(xml):
-    return xml.find('lom:lom/lom:general/lom:description/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip().decode()
+    return xml.find('lom:lom/lom:general/lom:description/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip()
 
 def addXMLSuffix(url):
     if url.endswith('.xml'):
