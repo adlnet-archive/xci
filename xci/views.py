@@ -105,7 +105,10 @@ def competencies():
         d['userview'] = uview
         if mb:
             if competency.isMB(comp):
-                thexml = requests.get(competency.addXMLSuffix(comp['uri'])).text
+                try:
+                    thexml = requests.get(competency.addXMLSuffix(comp['uri'])).text
+                except:
+                    thexml = mbc.toXML(comp)
             else:
                 thexml = mbc.toXML(comp)
             return Response(thexml, mimetype='text/xml')
