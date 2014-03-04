@@ -42,6 +42,9 @@ def saveCompetency(json_comp):
     else:
         db.competency.insert(json_comp, manipulate=False)
 
+def updateCompetencyLR(c_id,lr_uri):
+    db.competency.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+
 def updateCompetency(json_comp):
     db.competency.update({'uri':json_comp['uri']}, json_comp, manipulate=False)
 
@@ -62,7 +65,9 @@ def getCompetencyById(cid, objectid=False):
 def findoneComp(d):
     return db.competency.find_one(d)
 
-def findCompetencies(d=None):
+def findCompetencies(d=None, sort=None, asc=1):
+    if sort:
+        return [x for x in db.competency.find(d).sort(sort, asc)]
     return [x for x in db.competency.find(d)]
 
 def findCompetencyFrameworks(d=None):

@@ -26,19 +26,20 @@
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<div>
-		<!--If user is admin they'll have the teacher role as well-->
-		{% if 'teacher' in current_user.roles %}
-		<div id="userComps">
-		<!--Javascript fills this in-->
-		</div>
-		<ul class="pager" id="compPager">
-			<li id="compPreviousLi" class="previous"><a id="compPreviousA" href="#">&larr; Previous</a></li>
-			<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
-		</ul>
-		{% else %}
-		Must be a teacher or admin to link LR results to competencies!
-		{% endif %}
+		<br>
+		<div id="compContainer">
+			<!--If user is admin they'll have the teacher role as well-->
+			{% if 'teacher' in current_user.roles %}
+			<div id="userComps">
+			<!--Javascript fills this in-->
+			</div>
+			<ul class="pager" id="compPager">
+				<li id="compPreviousLi" class="previous"><a id="compPreviousA" href="#">&larr; Previous</a></li>
+				<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
+			</ul>
+			{% else %}
+			Must be a teacher or admin to link LR results to competencies!
+			{% endif %}
 		</div>
 	</div>
 </div>
@@ -71,7 +72,7 @@
 		Get all of the comp keys into a list and get length
 		Initialize compPages and compCurrentPage
 		*/
-		var COMP_PAGE_LIMIT = 5;
+		var COMP_PAGE_LIMIT = 25;
 		var compTotal = comps.length;
 		var compPages = 0;
 		var compCurrentPage = 0;
@@ -145,17 +146,20 @@
 
 		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			$('#userComps').append("<div class='panel panel-default droppable' id='"+value.id+"'>"
-									+ "<div class='panel-heading>"
+			$('#userComps').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+									+ "<div class='panel-heading'>"
 									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
-									+ "</div"
+									+ "</div>"
 									+ "<div class='panel-body'>"
 									+ "<p>"+value.description+"</p></div>");
 			$('#userComps div').last()
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						alert("Linked LR " + $(ui.draggable).attr('id') + " to comp " + value.id);
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						$.post(SCRIPT_ROOT+"link_lr_data", postData, function(data, status){
+							alert(data);
+						});
 					}
 				});
 		});
