@@ -48,9 +48,9 @@ def __getLOMString(parent, s, language="en"):
 
 def __addLevels(parent, s):
     # educational
-    # typicalAgeRange - langstring
+    # description - langstring
     ed = etree.SubElement(parent, "{%s}" % NSMAP['lom'] + 'educational')
-    lvl = etree.SubElement(ed, "{%s}" % NSMAP['lom'] + "typicalAgeRange")
+    lvl = etree.SubElement(ed, "{%s}" % NSMAP['lom'] + "description")
     __getLOMString(lvl, s)
     return ed
     
