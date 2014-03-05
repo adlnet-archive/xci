@@ -82,7 +82,7 @@ class CompetencyEditForm(Form):
     ctype = TextField('Competency Type')
     levels = TextField('Levels')
     relations = TextField('Parent/siblings')
-    objectids = TextField('Related Objects')  
+    linked_content = TextField('Linked Content')  
 
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)
@@ -97,7 +97,7 @@ class CompetencyEditForm(Form):
             self.ctype.data = obj.get('type', None)
             self.levels.data = json.dumps(obj.get('levels', None)) if obj.get('levels', None) else obj.get('levels', None)
             self.relations.data = json.dumps(obj.get('relations', None)) if obj.get('relations', None) else obj.get('relations', None)
-            self.objectids.data = json.dumps(obj.get('objectids', None)) if obj.get('objectids', None) else obj.get('objectids', None)
+            self.linked_content.data = json.dumps(obj.get('linked_content', None)) if obj.get('linked_content', None) else obj.get('linked_content', None)
 
     def toDict(self):
         d = {'title':self.title.data,
@@ -112,8 +112,8 @@ class CompetencyEditForm(Form):
             d['levels'] = json.loads(self.levels.data)
         if self.relations.data:
             d['relations'] = json.loads(self.relations.data)
-        if self.objectids.data:
-            d['objectids'] = json.loads(self.objectids.data)
+        if self.linked_content.data:
+            d['linked_content'] = json.loads(self.linked_content.data)
 
         return d
 
