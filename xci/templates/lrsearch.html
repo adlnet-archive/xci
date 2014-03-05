@@ -26,20 +26,54 @@
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<br>
-		<div id="compContainer">
-			<!--If user is admin they'll have the teacher role as well-->
-			{% if 'teacher' in current_user.roles %}
-			<div id="userComps">
-			<!--Javascript fills this in-->
-			</div>
-			<ul class="pager" id="compPager">
-				<li id="compPreviousLi" class="previous"><a id="compPreviousA" href="#">&larr; Previous</a></li>
-				<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
+		<div id="tabs">
+			<ul>
+				<li><a href="#tabs-comp">Comps</a></li>
+				<li><a href="#tabs-cfwk">Comp Frameworks</a></li>
+				<li><a href="#tabs-pfwk">Perf Frameworks</a></li>
 			</ul>
-			{% else %}
-			Must be a teacher or admin to link LR results to competencies!
-			{% endif %}
+			<div id="tabs-comp">
+				<!--If user is admin they'll have the teacher role as well-->
+				{% if 'teacher' in current_user.roles %}
+				<div id="userComps">
+				<!--Javascript fills this in-->
+				</div>
+				<ul class="pager" id="compPager">
+					<li id="compPreviousLi" class="previous"><a id="compPreviousA" href="#">&larr; Previous</a></li>
+					<li id="compNextLi" class="next"><a id="compNextA" href="#">Next &rarr;</a></li>
+				</ul>
+				{% else %}
+				Must be a teacher or admin to link LR results to competencies!
+				{% endif %}
+			</div>
+			<div id="tabs-cfwk">
+				<!--If user is admin they'll have the teacher role as well-->
+				{% if 'teacher' in current_user.roles %}
+				<div id="userCfwks">
+				<!--Javascript fills this in-->
+				</div>
+				<ul class="pager" id="cfwkPager">
+					<li id="cfwkPreviousLi" class="previous"><a id="cfwkPreviousA" href="#">&larr; Previous</a></li>
+					<li id="cfwkNextLi" class="next"><a id="cfwkNextA" href="#">Next &rarr;</a></li>
+				</ul>
+				{% else %}
+				Must be a teacher or admin to link LR results to competency frameworks!
+				{% endif %}
+			</div>
+			<div id="tabs-pfwk">
+				<!--If user is admin they'll have the teacher role as well-->
+				{% if 'teacher' in current_user.roles %}
+				<div id="userPfwks">
+				<!--Javascript fills this in-->
+				</div>
+				<ul class="pager" id="pfwkPager">
+					<li id="pfwkPreviousLi" class="previous"><a id="pfwkPreviousA" href="#">&larr; Previous</a></li>
+					<li id="pfwkNextLi" class="next"><a id="pfwkNextA" href="#">Next &rarr;</a></li>
+				</ul>
+				{% else %}
+				Must be a teacher or admin to link LR results to competency frameworks!
+				{% endif %}
+			</div>
 		</div>
 	</div>
 </div>
@@ -60,6 +94,13 @@
 	var resultPages = 0;
 	var resultCurrentPage = 0;
 	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""));
+	var compfwks = JSON.parse("{{ compfwks }}".replace(/u&#39;|&#39;/g, "\""));
+	var perfwks = JSON.parse("{{ perfwks }}".replace(/u&#39;|&#39;/g, "\""));
+
+	// Init tabs
+	$(function(){
+		$('#tabs').tabs();
+	});
 
 	// If there are no comps hide the pager
 	if (comps.length === 0){
@@ -72,7 +113,7 @@
 		Get all of the comp keys into a list and get length
 		Initialize compPages and compCurrentPage
 		*/
-		var COMP_PAGE_LIMIT = 25;
+		var COMP_PAGE_LIMIT = 5;
 		var compTotal = comps.length;
 		var compPages = 0;
 		var compCurrentPage = 0;
@@ -83,19 +124,19 @@
 		}
 
 		// Create large array that will hold arrays of comp ids for each page
-		var bigArray = new Array();
+		var compArray = new Array();
 		for(i=0; i<=compPages*COMP_PAGE_LIMIT; i+=COMP_PAGE_LIMIT){
 			try{
 				// Push array of 5 comp keys into big array
-				bigArray.push(comps.slice(i, (i + COMP_PAGE_LIMIT)));
+				compArray.push(comps.slice(i, (i + COMP_PAGE_LIMIT)));
 			}
 			catch(err){
 				// This happens at the end of comp list, just push the remaining comp keys
-				bigArray.push(comps.slice(i, (compTotal - 1)));
+				compArray.push(comps.slice(i, (compTotal - 1)));
 			}
 		}
 		// Add the first comp list to the DOM
-		addComps(bigArray[0])
+		addComps(compArray[0])
 
 		// If there is more than one page of comps - set the href for the compNext link and hide the compPrevious button
 		// Else hide the comp next/prev buttons
@@ -106,6 +147,102 @@
 		else{
 			$('#compNextLi').hide()
 			$('#compPreviousLi').hide()
+		}
+	}
+
+	// If there are no comp fwks hide the pager
+	if (compfwks.length === 0){
+		$('#userCfwks').append("There are no competency frameworks in the system!");
+		$('#cfwkPager').hide();
+	}
+	else{
+		/*
+		Set the comp limit per page
+		Get all of the comp keys into a list and get length
+		Initialize compPages and compCurrentPage
+		*/
+		var CFWK_PAGE_LIMIT = 5;
+		var cfwkTotal = compfwks.length;
+		var cfwkPages = 0;
+		var cfwkCurrentPage = 0;
+		
+		// If user has more comps that can fit on one page - calculate how many pages needed
+		if (cfwkTotal > CFWK_PAGE_LIMIT){
+			cfwkPages = (cfwkTotal % CFWK_PAGE_LIMIT == 0) ? cfwkTotal / CFWK_PAGE_LIMIT : Math.floor(cfwkTotal / CFWK_PAGE_LIMIT);
+		}
+
+		// Create large array that will hold arrays of comp ids for each page
+		var cfwkArray = new Array();
+		for(i=0; i<=cfwkPages*CFWK_PAGE_LIMIT; i+=CFWK_PAGE_LIMIT){
+			try{
+				// Push array of 5 comp keys into big array
+				cfwkArray.push(compfwks.slice(i, (i + CFWK_PAGE_LIMIT)));
+			}
+			catch(err){
+				// This happens at the end of comp list, just push the remaining comp keys
+				cfwkArray.push(compfwks.slice(i, (cfwkTotal - 1)));
+			}
+		}
+		// Add the first comp list to the DOM
+		addCfwks(cfwkArray[0])
+
+		// If there is more than one page of comps - set the href for the compNext link and hide the compPrevious button
+		// Else hide the comp next/prev buttons
+		if (cfwkPages > 0){
+			$('#cfwkNextA').attr('href', cfwkCurrentPage + 1)
+			$('#cfwkPreviousLi').hide()
+		}
+		else{
+			$('#cfwkNextLi').hide()
+			$('#cfwkPreviousLi').hide()
+		}
+	}
+
+	// If there are no per fwks hide the pager
+	if (perfwks.length === 0){
+		$('#userPfwks').append("There are no performance frameworks in the system!");
+		$('#pfwkPager').hide();
+	}
+	else{
+		/*
+		Set the comp limit per page
+		Get all of the comp keys into a list and get length
+		Initialize compPages and compCurrentPage
+		*/
+		var PFWK_PAGE_LIMIT = 5;
+		var pfwkTotal = perfwks.length;
+		var pfwkPages = 0;
+		var pfwkCurrentPage = 0;
+		
+		// If user has more perfwks that can fit on one page - calculate how many pages needed
+		if (pfwkTotal > PFWK_PAGE_LIMIT){
+			pfwkPages = (pfwkTotal % PFWK_PAGE_LIMIT == 0) ? pfwkTotal / PFWK_PAGE_LIMIT : Math.floor(pfwkTotal / PFWK_PAGE_LIMIT);
+		}
+
+		// Create large array that will hold arrays of perfwk ids for each page
+		var pfwkArray = new Array();
+		for(i=0; i<=pfwkPages*PFWK_PAGE_LIMIT; i+=PFWK_PAGE_LIMIT){
+			try{
+				// Push array of limit of keys into big array
+				pfwkArray.push(perfwks.slice(i, (i + PFWK_PAGE_LIMIT)));
+			}
+			catch(err){
+				// This happens at the end of perfwk list, just push the remaining comp keys
+				pfwkArray.push(perfwks.slice(i, (pfwkTotal - 1)));
+			}
+		}
+		// Add the first perfwk list to the DOM
+		addPfwks(pfwkArray[0])
+
+		// If there is more than one page of perfwks - set the href for the pfwkNext link and hide the pfwkPrevious button
+		// Else hide the pfwk next/prev buttons
+		if (pfwkPages > 0){
+			$('#pfwkNextA').attr('href', pfwkCurrentPage + 1)
+			$('#pfwkPreviousLi').hide()
+		}
+		else{
+			$('#pfwkNextLi').hide()
+			$('#pfwkPreviousLi').hide()
 		}
 	}
 	//End of everything automatically ran after page loads
@@ -157,7 +294,55 @@
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
 						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
-						$.post(SCRIPT_ROOT+"link_lr_data", postData, function(data, status){
+						$.post(SCRIPT_ROOT+"link_lr_comp", postData, function(data, status){
+							alert(data);
+						});
+					}
+				});
+		});
+	}
+	function addCfwks(array){
+		// Clear userComps div
+		$('#userCfwks').html("")
+
+		// For each comp in the array - add that data to the DOM and add droppable functionality
+		$.each(array, function(index, value){
+			$('#userCfwks').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+									+ "<div class='panel-heading'>"
+									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
+									+ "</div>"
+									+ "<div class='panel-body'>"
+									+ "<p>"+value.description+"</p></div>");
+			$('#userCfwks div').last()
+				.droppable({
+					hoverClass: "ui-state-hover",
+					drop: function(event, ui){
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						$.post(SCRIPT_ROOT+"link_lr_cfwk", postData, function(data, status){
+							alert(data);
+						});
+					}
+				});
+		});
+	}
+	function addPfwks(array){
+		// Clear userComps div
+		$('#userPfwks').html("")
+
+		// For each comp in the array - add that data to the DOM and add droppable functionality
+		$.each(array, function(index, value){
+			$('#userPfwks').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+									+ "<div class='panel-heading'>"
+									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
+									+ "</div>"
+									+ "<div class='panel-body'>"
+									+ "<p>"+value.description+"</p></div>");
+			$('#userPfwks div').last()
+				.droppable({
+					hoverClass: "ui-state-hover",
+					drop: function(event, ui){
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						$.post(SCRIPT_ROOT+"link_lr_pfwk", postData, function(data, status){
 							alert(data);
 						});
 					}
@@ -276,7 +461,7 @@
 		Increment comp page
 		*/
 		event.preventDefault();
-		addComps(bigArray[$('#compNextA').attr('href')])
+		addComps(compArray[$('#compNextA').attr('href')])
 		compCurrentPage++
 
 		// Decrement previous link and show previous button
@@ -299,7 +484,7 @@
 		Decrement comp page
 		*/
 		event.preventDefault();		
-		addComps(bigArray[$('#compPreviousA').attr('href')])
+		addComps(compArray[$('#compPreviousA').attr('href')])
 		compCurrentPage--
 
 		// Increment next link and show next button
@@ -315,5 +500,97 @@
 			$('#compPreviousA').attr('href', compCurrentPage - 1)
 		}
 	});
+	$('#cfwkNextA').click(function(event){
+		/*
+		Prevent fire
+		Add new page of comps to div
+		Increment comp page
+		*/
+		event.preventDefault();
+		addCfwks(cfwkArray[$('#cfwkNextA').attr('href')])
+		cfwkCurrentPage++
+
+		// Decrement previous link and show previous button
+		$('#cfwkPreviousA').attr('href', cfwkCurrentPage - 1)
+		$('#cfwkPreviousLi').show()
+
+		// If compCurrentPage equals total comp pages hide next button
+		// Else increment page for next link
+		if (cfwkCurrentPage == cfwkPages){
+			$('#cfwkNextLi').hide()
+		}
+		else{
+			$('#cfwkNextA').attr('href', cfwkCurrentPage + 1)
+		}
+	});
+	$('#cfwkPreviousA').click(function(event){
+		/*
+		Prevent fire
+		Add new page ofcomps to div
+		Decrement comp page
+		*/
+		event.preventDefault();		
+		addCfwks(cfwkArray[$('#cfwkPreviousA').attr('href')])
+		cfwkCurrentPage--
+
+		// Increment next link and show next button
+		$('#cfwkNextA').attr('href', cfwkCurrentPage + 1)
+		$('#cfwkNextLi').show()
+
+		// If compCurrentPage equals 0 hide previous button
+		// Else decrement page for previous link
+		if (cfwkCurrentPage == 0){
+			$('#cfwkPreviousLi').hide()
+		}
+		else{
+			$('#cfwkPreviousA').attr('href', cfwkCurrentPage - 1)
+		}
+	});
+	$('#pfwkNextA').click(function(event){
+		/*
+		Prevent fire
+		Add new page of comps to div
+		Increment comp page
+		*/
+		event.preventDefault();
+		addPfwks(pfwkArray[$('#pfwkNextA').attr('href')])
+		pfwkCurrentPage++
+
+		// Decrement previous link and show previous button
+		$('#pfwkPreviousA').attr('href', pfwkCurrentPage - 1)
+		$('#pfwkPreviousLi').show()
+
+		// If pfwkCurrentPage equals total comp pages hide next button
+		// Else increment page for next link
+		if (pfwkCurrentPage == pfwkPages){
+			$('#pfwkNextLi').hide()
+		}
+		else{
+			$('#pfwkNextA').attr('href', pfwkCurrentPage + 1)
+		}
+	});
+	$('#pfwkPreviousA').click(function(event){
+		/*
+		Prevent fire
+		Add new page ofcomps to div
+		Decrement comp page
+		*/
+		event.preventDefault();		
+		addPfwks(pfwkArray[$('#pfwkPreviousA').attr('href')])
+		pfwkCurrentPage--
+
+		// Increment next link and show next button
+		$('#pfwkNextA').attr('href', pfwkCurrentPage + 1)
+		$('#pfwkNextLi').show()
+
+		// If pfwkCurrentPage equals 0 hide previous button
+		// Else decrement page for previous link
+		if (pfwkCurrentPage == 0){
+			$('#pfwkPreviousLi').hide()
+		}
+		else{
+			$('#pfwkPreviousA').attr('href', pfwkCurrentPage - 1)
+		}
+	});		
 </script>
 {% endblock %}

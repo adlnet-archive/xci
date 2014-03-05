@@ -45,6 +45,12 @@ def saveCompetency(json_comp):
 def updateCompetencyLR(c_id,lr_uri):
     db.competency.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
 
+def updateCompetencyFrameworkLR(c_id, lr_uri):
+    db.compfwk.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+
+def updatePerformanceFrameworkLR(c_id, lr_uri):
+    db.perfwk.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+
 def updateCompetency(json_comp):
     db.competency.update({'uri':json_comp['uri']}, json_comp, manipulate=False)
 

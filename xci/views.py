@@ -281,13 +281,25 @@ def add_endpoint():
 @app.route('/lr_search', methods=["GET"])
 def lr_search():
     comps = models.findCompetencies(sort='title')
+    compfwks = models.findCompetencyFrameworks()
+    perfwks = models.findPerformanceFrameworks()
+
     for c in comps:
         c['id'] = str(c['_id'])
         del c['_id']
-    return render_template('lrsearch.html', search_form=SearchForm(), comps=comps)
 
-@app.route('/link_lr_data', methods=['POST'])
-def link_lr_data():
+    for cf in compfwks:
+        cf['id'] = str(cf['_id'])
+        del cf['_id']
+
+    for p in perfwks:
+        p['id'] = str(p['_id'])
+        del p['_id']
+
+    return render_template('lrsearch.html', search_form=SearchForm(), comps=comps, compfwks=compfwks, perfwks=perfwks)
+
+@app.route('/link_lr_comp', methods=['POST'])
+def link_lr_comp():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
 
@@ -295,8 +307,29 @@ def link_lr_data():
         models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
-    return "Successfully linked"
+    return "Successfully linked competency"
 
+@app.route('/link_lr_cfwk', methods=['POST'])
+def link_lr_cfwk():
+    lr_uri = request.form['lr_uri']
+    c_id = request.form['c_id']
+
+    try:
+        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
+    except Exception, e:
+        return e.message
+    return "Successfully linked competency framework"
+
+@app.route('/link_lr_pfwk', methods=['POST'])
+def link_lr_pfwk():
+    lr_uri = request.form['lr_uri']
+    c_id = request.form['c_id']
+
+    try:
+        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
+    except Exception, e:
+        return e.message
+    return "Successfully linked performance framework"
 
 @app.route('/admin/reset', methods=["POST"])
 @check_admin
