@@ -105,7 +105,7 @@ def parseMedBiqPerfXML(xmlbit):
     obj['title'] = getTitle(xmlbit)
     obj['description'] = getDescription(xmlbit)
     obj['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
-    obj['objectids'] = getReferences(xmlbit)
+    obj['linked_content'] = getReferences(xmlbit)
     obj['components'] = getComponents(xmlbit)
     models.savePerformanceFramework(obj)
     # obj.pop('_id', False)
@@ -115,7 +115,7 @@ def getReferences(xmlbit):
     refs = []
     for ref in xmlbit.findall('pf:SupportingInformation/pf:Reference', namespaces=mb_namespaces):
         r = {}
-        r['objecturi'] = ref.find('rdf:Description', namespaces=mb_namespaces).attrib.values()[0].strip()
+        r['objectid'] = ref.find('rdf:Description', namespaces=mb_namespaces).attrib.values()[0].strip()
         typexml = ref.find('rdf:Type', namespaces=mb_namespaces)
         if typexml is not None:
             r['type'] = typexml.attrib.values()[0].strip()
