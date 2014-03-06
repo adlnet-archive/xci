@@ -26,13 +26,13 @@
 		</ul>
 	</div>
 	<div class="col-md-6">
-		<div id="tabs">
-			<ul>
-				<li><a href="#tabs-comp">Comps</a></li>
-				<li><a href="#tabs-cfwk">Comp Frameworks</a></li>
-				<li><a href="#tabs-pfwk">Perf Frameworks</a></li>
-			</ul>
-			<div id="tabs-comp">
+		<ul class="nav nav-tabs" id="myTab">
+			<li class="active"><a href="#tabs-comp" data-toggle="tab">Comps</a></li>
+			<li><a href="#tabs-cfwk" data-toggle="tab">Comp Fwks</a></li>
+			<li><a href="#tabs-pfwk" data-toggle="tab">Per Fwks</a></li>
+		</ul>
+		<div id="myTabContent" class="tab-content">
+			<div id="tabs-comp" class="tab-pane active">
 				<!--If user is admin they'll have the teacher role as well-->
 				{% if 'teacher' in current_user.roles %}
 				<div id="userComps">
@@ -46,7 +46,7 @@
 				Must be a teacher or admin to link LR results to competencies!
 				{% endif %}
 			</div>
-			<div id="tabs-cfwk">
+			<div id="tabs-cfwk" class="tab-pane">
 				<!--If user is admin they'll have the teacher role as well-->
 				{% if 'teacher' in current_user.roles %}
 				<div id="userCfwks">
@@ -60,7 +60,7 @@
 				Must be a teacher or admin to link LR results to competency frameworks!
 				{% endif %}
 			</div>
-			<div id="tabs-pfwk">
+			<div id="tabs-pfwk" class="tab-pane">
 				<!--If user is admin they'll have the teacher role as well-->
 				{% if 'teacher' in current_user.roles %}
 				<div id="userPfwks">
@@ -93,13 +93,19 @@
 	var LR_SERVER = "http://72.243.185.28/";
 	var resultPages = 0;
 	var resultCurrentPage = 0;
-	var comps = JSON.parse("{{ comps }}".replace(/u&#39;|&#39;/g, "\""));
-	var compfwks = JSON.parse("{{ compfwks }}".replace(/u&#39;|&#39;/g, "\""));
-	var perfwks = JSON.parse("{{ perfwks }}".replace(/u&#39;|&#39;/g, "\""));
+	var comps = JSON.parse("{{ comps }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n/g, ""));
+	var compfwks = JSON.parse("{{ compfwks }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/, ">").replace(/\n/g, ""));
+	var perfwks = JSON.parse("{{ perfwks }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/, ">").replace(/\n/g, ""));
 
-	// Init tabs
-	$(function(){
-		$('#tabs').tabs();
+	// Handle tabs
+	$('#myTab a').click(function(e){
+		if($(this).parent('li').hasClass('active')){
+			$($(this).attr('href')).hide();
+		}
+		else{
+			e.preventDefault();
+			$(this).tab('show');
+		}
 	});
 
 	// If there are no comps hide the pager
@@ -113,14 +119,14 @@
 		Get all of the comp keys into a list and get length
 		Initialize compPages and compCurrentPage
 		*/
-		var COMP_PAGE_LIMIT = 5;
+		var COMP_PAGE_LIMIT = 25;
 		var compTotal = comps.length;
 		var compPages = 0;
 		var compCurrentPage = 0;
 		
 		// If user has more comps that can fit on one page - calculate how many pages needed
 		if (compTotal > COMP_PAGE_LIMIT){
-			compPages = (compTotal % COMP_PAGE_LIMIT == 0) ? compTotal / COMP_PAGE_LIMIT : Math.floor(compTotal / COMP_PAGE_LIMIT);
+			compPages = (compTotal % COMP_PAGE_LIMIT == 0) ? (compTotal / COMP_PAGE_LIMIT) - 1 : Math.floor(compTotal / COMP_PAGE_LIMIT);
 		}
 
 		// Create large array that will hold arrays of comp ids for each page
@@ -168,7 +174,7 @@
 		
 		// If user has more comps that can fit on one page - calculate how many pages needed
 		if (cfwkTotal > CFWK_PAGE_LIMIT){
-			cfwkPages = (cfwkTotal % CFWK_PAGE_LIMIT == 0) ? cfwkTotal / CFWK_PAGE_LIMIT : Math.floor(cfwkTotal / CFWK_PAGE_LIMIT);
+			cfwkPages = (cfwkTotal % CFWK_PAGE_LIMIT == 0) ? (cfwkTotal / CFWK_PAGE_LIMIT) - 1 : Math.floor(cfwkTotal / CFWK_PAGE_LIMIT);
 		}
 
 		// Create large array that will hold arrays of comp ids for each page
@@ -216,7 +222,7 @@
 		
 		// If user has more perfwks that can fit on one page - calculate how many pages needed
 		if (pfwkTotal > PFWK_PAGE_LIMIT){
-			pfwkPages = (pfwkTotal % PFWK_PAGE_LIMIT == 0) ? pfwkTotal / PFWK_PAGE_LIMIT : Math.floor(pfwkTotal / PFWK_PAGE_LIMIT);
+			pfwkPages = (pfwkTotal % PFWK_PAGE_LIMIT == 0) ? (pfwkTotal / PFWK_PAGE_LIMIT) - 1 : Math.floor(pfwkTotal / PFWK_PAGE_LIMIT);
 		}
 
 		// Create large array that will hold arrays of perfwk ids for each page
@@ -283,7 +289,7 @@
 
 		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			$('#userComps').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+			$('#userComps').append("<div class='panel panel-default droppable' id='"+value._id+"' style='height:180px'>"
 									+ "<div class='panel-heading'>"
 									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
 									+ "</div>"
@@ -293,7 +299,7 @@
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
 						$.post(SCRIPT_ROOT+"link_lr_comp", postData, function(data, status){
 							alert(data);
 						});
@@ -307,7 +313,7 @@
 
 		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			$('#userCfwks').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+			$('#userCfwks').append("<div class='panel panel-default droppable' id='"+value._id+"' style='height:180px'>"
 									+ "<div class='panel-heading'>"
 									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
 									+ "</div>"
@@ -317,7 +323,7 @@
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
 						$.post(SCRIPT_ROOT+"link_lr_cfwk", postData, function(data, status){
 							alert(data);
 						});
@@ -331,7 +337,7 @@
 
 		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			$('#userPfwks').append("<div class='panel panel-default droppable' id='"+value.id+"' style='height:180px'>"
+			$('#userPfwks').append("<div class='panel panel-default droppable' id='"+value._id+"' style='height:180px'>"
 									+ "<div class='panel-heading'>"
 									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
 									+ "</div>"
@@ -341,7 +347,7 @@
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value.id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
 						$.post(SCRIPT_ROOT+"link_lr_pfwk", postData, function(data, status){
 							alert(data);
 						});
@@ -372,7 +378,7 @@
 			// Set compTotal count and calculate pages
 			num = data['count']
 			$('#count').html(num);
-			resultPages = (num % 25 == 0) ? num / 25 : Math.floor(num / 25)
+			resultPages = (num % 25 == 0) ? (num / 25) - 1 : Math.floor(num / 25)
 
 			// Set query for next/prev buttons
 			if (resultPages > 1){

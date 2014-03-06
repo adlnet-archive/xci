@@ -285,18 +285,20 @@ def lr_search():
     perfwks = models.findPerformanceFrameworks()
 
     for c in comps:
-        c['id'] = str(c['_id'])
-        del c['_id']
+        c['_id'] = str(c['_id'])
 
     for cf in compfwks:
-        cf['id'] = str(cf['_id'])
-        del cf['_id']
+        cf['_id'] = str(cf['_id'])
 
     for p in perfwks:
-        p['id'] = str(p['_id'])
-        del p['_id']
+        p['_id'] = str(p['_id'])
 
-    return render_template('lrsearch.html', search_form=SearchForm(), comps=comps, compfwks=compfwks, perfwks=perfwks)
+    jcomps = json.dumps(comps).replace('"', '\\"')
+    jcfwks = json.dumps(compfwks).replace('"', '\\"')
+    jpfwks = json.dumps(perfwks).replace('"', '\\"')
+
+    return render_template('lrsearch.html', search_form=SearchForm(), comps=jcomps,
+        compfwks=jcfwks, perfwks=jpfwks)
 
 @app.route('/link_lr_comp', methods=['POST'])
 def link_lr_comp():
