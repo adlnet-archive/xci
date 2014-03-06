@@ -14,6 +14,9 @@
     {% endif %}
     {% if 'admin' in current_user.roles %}
         <small><a href="{{ url_for('edit_comp', objid=cid) }}" class="btn btn-default">Edit</a></small>
+        {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
+            <small><a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}" class="btn btn-default">View as MedBiq Competency</a></small>
+        {% endif %}
     {% endif %}
     </h1>
 </div>
