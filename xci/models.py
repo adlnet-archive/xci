@@ -42,7 +42,7 @@ def saveCompetency(json_comp):
     else:
         db.competency.insert(json_comp, manipulate=False)
 
-def updateUserFwk(comp):
+def updateUserFwkByComp(comp):
     try:
         parents = comp['relations']['childof']
     except KeyError:
@@ -57,7 +57,7 @@ def updateUserFwk(comp):
 def updateCompInFwks(comp):
     # Remove this field in comp before updating the fwk
     db.compfwk.update({'competencies':{'$elemMatch':{'uri':comp['uri']}}}, {'$set': {'competencies.$': comp}}, multi=True)
-    updateUserFwk(comp)
+    updateUserFwkByComp(comp)
 
 def updateUserComp(comp):
     h = str(hash(comp['uri']))
@@ -71,11 +71,25 @@ def updateCompetencyLR(c_id,lr_uri):
     updateUserComp(comp)
     updateCompInFwks(comp)
 
-def updateCompetencyFrameworkLR(c_id, lr_uri):
-    db.compfwk.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+def updateUserFwkById(cfwk_id):
+    fwk = db.compfwk.find_one({'_id': ObjectId(cfwk_id)})
+    h = str(hash(fwk['uri']))
+    set_field = 'compfwks.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
 
-def updatePerformanceFrameworkLR(c_id, lr_uri):
-    db.perfwk.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
+    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserFwkById(cfwk_id)
+
+def updateUserPfwkById(pfwk_id):
+    fwk = db.perfwk.find_one({'_id': ObjectId(pfwk_id)})
+    h = str(hash(fwk['uri']))
+    set_field = 'perfwks.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
+    
+def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
+    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserPfwkById(pfwk_id)
 
 def updateCompetency(json_comp):
     db.competency.update({'uri':json_comp['uri']}, json_comp, manipulate=False)

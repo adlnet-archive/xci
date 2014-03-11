@@ -59,6 +59,11 @@ class RegistrationForm(Form):
             self.username.errors.append('Username already exists')
             return False
 
+        user = db.userprofiles.find_one({'email':self.email.data})
+        if user:
+            self.email.errors.append('Email already exists')
+            return False
+
         self.user = user
         return True 
 
