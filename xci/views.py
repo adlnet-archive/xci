@@ -1,6 +1,7 @@
 from xci import app, competency
+from xci.competency import MBCompetency as mbc
 from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response
+from flask import render_template, redirect, flash, url_for, request, make_response, Response
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -98,13 +99,25 @@ def competencies():
     d = {}
     uri = request.args.get('uri', None)
     uview = request.args.get('userview', False)
-    if uri:
+    mb = request.args.get('mb', False)
+    if uri:      
         d['uri'] = uri
         comp = models.getCompetency(uri, objectid=True)
         d['cid'] = comp.pop('_id')
         d['comp'] = comp
         d['userview'] = uview
-        return render_template('comp-details.html', **d)
+        if mb:
+            if not comp.get('edited', False) and competency.isMB(comp):
+                try:
+                    thexml = requests.get(competency.addXMLSuffix(comp['uri'])).text
+                except:
+                    thexml = mbc.toXML(comp)
+            else:
+                thexml = mbc.toXML(comp)
+            return Response(thexml, mimetype='application/xml')
+            # return render_template('comp-mb-edit.html', **d)
+        else:
+            return render_template('comp-details.html', **d)
 
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)

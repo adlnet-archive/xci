@@ -18,8 +18,18 @@ MB_COMP_TYPE = 'http://ns.medbiq.org/competencyobject/v1/'
 MB_COMP_FWK_TYPE = 'http://ns.medbiq.org/competencyframework/v1/'
 MB_PER_FWK_TYPE = 'http://ns.medbiq.org/performanceframework/v1/'
 
+def isMB(comp_json):
+    return (comp_json.get('type', '') == MB_COMP_TYPE) or \
+           (comp_json.get('type', '') == MB_COMP_FWK_TYPE) or \
+           (comp_json.get('type', '') == MB_PER_FWK_TYPE)
+
 def get_all_comp_frameworks():
     return []
+
+def getXML(uri):
+    res = requests.get(addXMLSuffix(copy.copy(uri))).text
+    # xmlbit = ET.fromstring(res)
+    return ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
 
 def parseComp(uri):
     types = {'{http://ns.medbiq.org/competencyframework/v1/}CompetencyFramework' : 
@@ -29,8 +39,10 @@ def parseComp(uri):
             '{http://ns.medbiq.org/performanceframework/v1/}PerformanceFramework' : 
                 {'parser': parseMedBiqPerfXML, 'getmodel': models.getPerformanceFramework} }
     # url = uri
-    res = requests.get(addXMLSuffix(copy.copy(uri))).text
-    xmlbit = ET.fromstring(res)
+    # res = requests.get(addXMLSuffix(copy.copy(uri))).text
+    # xmlbit = ET.fromstring(res)
+    # xmlbit = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
+    xmlbit = getXML(uri)
     existing = types[xmlbit.tag]['getmodel'](uri)
     if existing:
         existing.pop('_id', False)
@@ -50,8 +62,11 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
     for include in xmlbit.findall('cf:Includes', namespaces=mb_namespaces):
         if not obj.get('competencies', False):
             obj['competencies'] = []
-        url = addXMLSuffix(include.find('cf:Entry', namespaces=mb_namespaces).text.strip())
-        nxt = ET.fromstring(requests.get(url).text)
+        # url = addXMLSuffix(include.find('cf:Entry', namespaces=mb_namespaces).text.strip())
+        # nxt = ET.fromstring(requests.get(url).text)
+        # nxt = ET.XML(requests.get(url).text, parser=ET.XMLParser(encoding='utf-8'))
+        uri = include.find('cf:Entry', namespaces=mb_namespaces).text.strip()
+        nxt = getXML(uri)
         c = parseMedBiqCompXML(nxt, obj['uri'])
         obj['competencies'].append(c)
         obj = addChild(obj, c['uri'])
@@ -90,7 +105,7 @@ def parseMedBiqPerfXML(xmlbit):
     obj['title'] = getTitle(xmlbit)
     obj['description'] = getDescription(xmlbit)
     obj['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
-    obj['objectids'] = getReferences(xmlbit)
+    obj['linked_content'] = getReferences(xmlbit)
     obj['components'] = getComponents(xmlbit)
     models.savePerformanceFramework(obj)
     # obj.pop('_id', False)
@@ -100,7 +115,7 @@ def getReferences(xmlbit):
     refs = []
     for ref in xmlbit.findall('pf:SupportingInformation/pf:Reference', namespaces=mb_namespaces):
         r = {}
-        r['objecturi'] = ref.find('rdf:Description', namespaces=mb_namespaces).attrib.values()[0].strip()
+        r['objectid'] = ref.find('rdf:Description', namespaces=mb_namespaces).attrib.values()[0].strip()
         typexml = ref.find('rdf:Type', namespaces=mb_namespaces)
         if typexml is not None:
             r['type'] = typexml.attrib.values()[0].strip()
