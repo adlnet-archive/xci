@@ -2,7 +2,7 @@ from flask_login import UserMixin
 from pymongo import MongoClient
 
 from bson.objectid import ObjectId
-
+import pdb
 import datetime
 import pytz
 
@@ -42,8 +42,34 @@ def saveCompetency(json_comp):
     else:
         db.competency.insert(json_comp, manipulate=False)
 
+def updateUserFwk(comp):
+    try:
+        parents = comp['relations']['childof']
+    except KeyError:
+        parents = []
+
+    for uri in parents:
+        fwk = db.compfwk.find({'uri': uri})[0]
+        h = str(hash(uri))
+        set_field = 'compfwks.' + h
+        db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
+
+def updateCompInFwks(comp):
+    # Remove this field in comp before updating the fwk
+    db.compfwk.update({'competencies':{'$elemMatch':{'uri':comp['uri']}}}, {'$set': {'competencies.$': comp}}, multi=True)
+    updateUserFwk(comp)
+
+def updateUserComp(comp):
+    h = str(hash(comp['uri']))
+    set_field = 'competencies.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: comp}}, multi=True)
+
 def updateCompetencyLR(c_id,lr_uri):
     db.competency.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    comp = db.competency.find({'_id': ObjectId(c_id)})[0]
+    del comp['_id']
+    updateUserComp(comp)
+    updateCompInFwks(comp)
 
 def updateCompetencyFrameworkLR(c_id, lr_uri):
     db.compfwk.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
