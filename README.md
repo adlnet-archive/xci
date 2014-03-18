@@ -7,7 +7,7 @@ xci
 
 Software Installation
 
-	sudo apt-get install build-essential python-dev python-virtualenv mongodb git 
+	sudo apt-get install build-essential python-dev python-virtualenv mongodb git
 	sudo easy_install pip
 	sudo pip install virtualenv
 
@@ -21,3 +21,9 @@ Setup Mongo (The app uses xci as the name as the database, but you can change th
 Install packages
 
 	pip install -r requirements.txt
+
+Run
+
+	python runserver.py
+
+	(If you want to run the mongo shell run: mongo <db_name>)
