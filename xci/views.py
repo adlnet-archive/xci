@@ -390,3 +390,15 @@ def edit_comp(objid):
         return_dict = {'cform': f}
 
     return render_template('edit-comp.html', **return_dict)
+
+@app.route('/compsearch', methods=['GET', 'POST'])
+def compsearch():
+    comps = []
+    if request.method == 'GET':
+        return render_template('compsearch.html', comps=comps, search_form=SearchForm())
+    else:
+        sf = SearchForm(request.form)
+        if sf.validate_on_submit():
+            key = sf.search.data
+            comps = models.searchComps(key)
+        return render_template('compsearch.html', comps=comps, search_form=sf)        
