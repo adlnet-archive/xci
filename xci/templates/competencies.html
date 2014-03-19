@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-	<h1>Competencies</h1>
+	<span style="display:inline-block"><h1>Competencies</h1></span><span style="display:inline-block;padding-left:5em"><a href="/compsearch" class="btn btn-default">Search Comps</a></span>
 </div>
 {% if 'admin' in current_user.roles %}
 <div class="row">

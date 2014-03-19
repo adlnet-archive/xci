@@ -1,6 +1,6 @@
 from flask_login import UserMixin
 from pymongo import MongoClient
-
+import re
 from bson.objectid import ObjectId
 import pdb
 import datetime
@@ -33,6 +33,10 @@ def saveUserProfile(profile, userid=None):
 
 def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
+
+def searchComps(key):
+    regx = re.compile(key, re.IGNORECASE)
+    return db.competency.find({"title": regx})
 
 def saveCompetency(json_comp):
     if not json_comp.get('lastmodified', False):
