@@ -22,6 +22,11 @@ Install packages
 
 	pip install -r requirements.txt
 
+Add index
+
+	mongo xci
+	db.competency.ensureIndex({"title": 1})
+
 Run
 
 	python runserver.py
