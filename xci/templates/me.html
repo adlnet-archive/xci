@@ -26,6 +26,13 @@
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
+                    <ul>
+                    {% for lr in comp.lr_data %}
+                    <li><a href="{{ lr }}">LR Metadata</a></li>
+                    {% else %}
+                    There are no known linked LR resources
+                    {% endfor %}
+                    </ul>                    
                     <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
                 </div>
             </div>
@@ -36,6 +43,13 @@
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
+                    <ul>
+                    {% for lr in comp.lr_data %}
+                    <li><a href="{{ lr }}">LR Metadata</a></li>
+                    {% else %}
+                    There are no known linked LR resources
+                    {% endfor %}
+                    </ul>                    
                     <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
                 </div>
             </div>
@@ -59,6 +73,13 @@
             </div>
             <div class="panel-body">
                 <p>{{ cfwk.description }}</p>
+                <ul>
+                {% for lr in cfwk.lr_data %}
+                <li><a href="{{ lr }}">LR Metadata</a></li>
+                {% else %}
+                There are no known linked LR resources
+                {% endfor %}
+                </ul>                
             </div>
         </div>
     </div>
@@ -80,6 +101,13 @@
             </div>
             <div class="panel-body">
                 <p>{{ pfwk.description }}</p>
+                <ul>
+                {% for lr in pfwk.lr_data %}
+                <li><a href="{{ lr }}">LR Metadata</a></li>
+                {% else %}
+                There are no known linked LR resources
+                {% endfor %}
+                </ul>            
             </div>
         </div>
     </div>

@@ -9,6 +9,13 @@
         </div>
         <div class="panel-body">
             <p>{{ pfwk.description }}</p>
+			<ul>
+			{% for lr in pfwk.lr_data %}
+			<li><a href="{{ lr }}">LR Metadata</a></li>
+			{% else %}
+			There are no known linked LR resources
+			{% endfor %}
+			</ul>            
         </div>
     </div>
 </div>
