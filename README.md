@@ -11,6 +11,10 @@ Software Installation
 	sudo easy_install pip
 	sudo pip install virtualenv
 
+After you pull down your repo in the directory of your choice, create your virtual environment (don't include it in this project)
+
+	virtualenv env
+
 Setup Mongo (The app uses xci as the name as the database, but you can change that in the app if you wish)
 	
 	mongo
@@ -20,6 +24,7 @@ Setup Mongo (The app uses xci as the name as the database, but you can change th
 
 Install packages (inside of the virtualenv you created first)
 
+	. ./env/bin/activate
 	pip install -r requirements.txt
 
 Add index
