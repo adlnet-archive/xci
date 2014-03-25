@@ -14,11 +14,11 @@ Software Installation
 Setup Mongo (The app uses xci as the name as the database, but you can change that in the app if you wish)
 	
 	mongo
-	use <db_name>
+	use xci
 	db.addUser("username", "password")
 	db.auth("username", "password")
 
-Install packages
+Install packages (inside of the virtualenv you created first)
 
 	pip install -r requirements.txt
 
@@ -31,4 +31,4 @@ Run
 
 	python runserver.py
 
-	(If you want to run the mongo shell run: mongo <db_name>)
+	(If you want to run the mongo shell run: mongo xci)
