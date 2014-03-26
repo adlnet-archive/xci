@@ -117,6 +117,17 @@ def competencies():
             return Response(thexml, mimetype='application/xml')
             # return render_template('comp-mb-edit.html', **d)
         else:
+            compuri = d['uri']
+            if 'adlnet' in d['uri']:
+                compuri = compuri[:7] + 'www.' + compuri[7:]
+            url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+            resp = requests.get(url)
+            ids = []
+            if resp.status_code == 200:
+                lrresults = json.loads(resp.content)
+                ids = [s['doc_ID'] for s in lrresults['documents']]
+                for d_id in ids:
+                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
             return render_template('comp-details.html', **d)
 
     d['comps'] = models.findCompetencies()
@@ -136,6 +147,8 @@ def frameworks():
 
         return_dict = {'frameworks_form': FrameworksForm()}
     else:
+        import pdb
+        pdb.set_trace()
         ff = FrameworksForm(request.form)
         if ff.validate_on_submit():
             try:
@@ -319,7 +332,7 @@ def link_lr_comp():
     c_id = request.form['c_id']
 
     try:
-        models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
     except Exception, e:
         return e.message
     return "Successfully linked competency"
@@ -330,7 +343,7 @@ def link_lr_cfwk():
     c_id = request.form['c_id']
 
     try:
-        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
     except Exception, e:
         return e.message
     return "Successfully linked competency framework"
@@ -341,7 +354,7 @@ def link_lr_pfwk():
     c_id = request.form['c_id']
 
     try:
-        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
     except Exception, e:
         return e.message
     return "Successfully linked performance framework"
