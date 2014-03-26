@@ -139,7 +139,6 @@ def frameworks():
         ff = FrameworksForm(request.form)
         if ff.validate_on_submit():
             #add to system
-            print ff.framework_uri.data
             competency.parseComp(ff.framework_uri.data)
             return_dict = {'frameworks_form': FrameworksForm()}
         else:

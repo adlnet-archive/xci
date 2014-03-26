@@ -43,8 +43,6 @@ def parseComp(uri):
     # xmlbit = ET.fromstring(res)
     # xmlbit = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
     xmlbit = getXML(uri)
-    print xmlbit.tag
-    print uri
     existing = types[xmlbit.tag]['getmodel'](uri)
     if existing:
         existing.pop('_id', False)
@@ -68,7 +66,6 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         # nxt = ET.fromstring(requests.get(url).text)
         # nxt = ET.XML(requests.get(url).text, parser=ET.XMLParser(encoding='utf-8'))
         uri = include.find('cf:Entry', namespaces=mb_namespaces).text.strip()
-        print uri
         c = models.getCompetency(uri)
         if not c:
             c = models.getCompetencyFramework(uri)
