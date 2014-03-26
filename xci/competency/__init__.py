@@ -43,6 +43,8 @@ def parseComp(uri):
     # xmlbit = ET.fromstring(res)
     # xmlbit = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
     xmlbit = getXML(uri)
+    print xmlbit.tag
+    print uri
     existing = types[xmlbit.tag]['getmodel'](uri)
     if existing:
         existing.pop('_id', False)
@@ -66,8 +68,13 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         # nxt = ET.fromstring(requests.get(url).text)
         # nxt = ET.XML(requests.get(url).text, parser=ET.XMLParser(encoding='utf-8'))
         uri = include.find('cf:Entry', namespaces=mb_namespaces).text.strip()
-        nxt = getXML(uri)
-        c = parseMedBiqCompXML(nxt, obj['uri'])
+        print uri
+        c = models.getCompetency(uri)
+        if not c:
+            c = models.getCompetencyFramework(uri)
+        if not c:
+            nxt = getXML(uri)
+            c = parseMedBiqCompXML(nxt, obj['uri'])
         obj['competencies'].append(c)
         obj = addChild(obj, c['uri'])
     # removed this for now... look at medbiq compfwk Relation later: return structure(xmlbit, obj)
