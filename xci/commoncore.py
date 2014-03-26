@@ -3,7 +3,9 @@ import json
 import datetime
 import pytz
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
 from xci import models
+from os import path
 
 CCObjectType = 'commoncoreobject'
 
@@ -29,9 +31,21 @@ def getCommonCore():
         except Exception, e:
             print e
             return None
+
+        try:
+            thexml = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
+        except ParseError:
+            try: 
+                if p == parts[0]:
+                    thexml = ET.parse(path.abspath('../ccssi/xml/math.xml'))
+                else:
+                    thexml = ET.parse(path.abspath('../ccssi/xml/ela-literacy.xml'))
+            except Exception, e:
+                print e
+                return None
         
         try:
-            saveCCXMLinDB(ET.XML(res, parser=ET.XMLParser(encoding='utf-8')))
+            saveCCXMLinDB(thexml)
             # saveCCXMLinDB(ET.fromstring(res))
         except Exception, e:
             print e
