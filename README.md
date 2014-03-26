@@ -42,4 +42,4 @@ Note About Common Core
 	
 Common Core took down the xml versions of their competencies. The app will try to load the xml if it exists on the file system.
 
-To do this, download the cc zip (here)[http://www.corestandards.org/wp-content/uploads/ccssi.zip]. Extract and save one level above the project (at the same level as the env folder).
+To do this, download the cc zip [here](http://www.corestandards.org/wp-content/uploads/ccssi.zip). Extract and save one level above the project (at the same level as the env folder).
