@@ -8,7 +8,7 @@
             <h3 class="panel-title"><a href="{{ url_for('perfwks') }}?uri={{pfwk.uri}}">{{ pfwk.title }}</a></h3>
         </div>
         <div class="panel-body">
-            <p>{{ pfwk.description }}</p>
+            <p>{{ pfwk.description|safe }}</p>
 			<ul>
 			{% for lr in pfwk.lr_data %}
 			<li><a href="{{ lr }}">LR Metadata</a></li>

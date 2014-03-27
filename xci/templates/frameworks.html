@@ -27,7 +27,7 @@
             <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}">{{ cfwk.title }}</a></h3>
         </div>
         <div class="panel-body">
-            <p>{{ cfwk.description }}</p>
+            <p>{{ cfwk.description|safe }}</p>
             <ul>
             {% for lr in cfwk.lr_data %}
             <li><a href="{{ lr }}">LR Metadata</a></li>
