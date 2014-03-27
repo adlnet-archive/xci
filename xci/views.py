@@ -147,8 +147,6 @@ def frameworks():
 
         return_dict = {'frameworks_form': FrameworksForm()}
     else:
-        import pdb
-        pdb.set_trace()
         ff = FrameworksForm(request.form)
         if ff.validate_on_submit():
             #add to system

@@ -47,16 +47,17 @@ def saveCompetency(json_comp):
         db.competency.insert(json_comp, manipulate=False)
 
 def updateUserFwkByComp(comp):
-    try:
-        parents = comp['relations']['childof']
-    except KeyError:
-        parents = []
+    if not comp['type'] == 'commoncoreobject':
+        try:
+            parents = comp['relations']['childof']
+        except KeyError:
+            parents = []
 
-    for uri in parents:
-        fwk = db.compfwk.find({'uri': uri})[0]
-        h = str(hash(uri))
-        set_field = 'compfwks.' + h
-        db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
+        for uri in parents:
+            fwk = db.compfwk.find({'uri': uri})[0]
+            h = str(hash(uri))
+            set_field = 'compfwks.' + h
+            db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
 
 def updateCompInFwks(comp):
     # Remove this field in comp before updating the fwk
@@ -69,8 +70,11 @@ def updateUserComp(comp):
     db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: comp}}, multi=True)
 
 def updateCompetencyLR(c_id,lr_uri):
-    db.competency.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    comp = db.competency.find({'_id': ObjectId(c_id)})[0]
+    if isinstance(c_id, basestring):
+        c_id = ObjectId(c_id)
+
+    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
+    comp = db.competency.find({'_id': c_id})[0]
     del comp['_id']
     updateUserComp(comp)
     updateCompInFwks(comp)
