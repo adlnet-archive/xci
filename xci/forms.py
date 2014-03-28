@@ -1,14 +1,16 @@
+import json
 from flask_wtf import Form
 from wtforms import TextField, PasswordField, BooleanField, RadioField, HiddenField
 from wtforms.validators import DataRequired
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash
 from rfc3987 import parse
-import json
-        
+
+# Set db
 mongo = MongoClient()
 db = mongo.xci
 
+# Validate the uri field in the form
 def validateURI(form, field):
     parse(field.data, rule='IRI')
 
@@ -20,6 +22,7 @@ class LoginForm(Form):
         Form.__init__(self, *args, **kwargs)
         self.user = None
 
+    # Make sure the username exists in db and the password is correct for the user to login
     def validate(self):
         rv = Form.validate(self)
         if not rv:
@@ -49,6 +52,7 @@ class RegistrationForm(Form):
         Form.__init__(self, *args, **kwargs)
         self.user = None
 
+    # Check if the username or email already exist in the db
     def validate(self):
         rv = Form.validate(self)
         if not rv:
@@ -104,6 +108,7 @@ class CompetencyEditForm(Form):
             self.relations.data = json.dumps(obj.get('relations', None)) if obj.get('relations', None) else obj.get('relations', None)
             self.linked_content.data = json.dumps(obj.get('linked_content', None)) if obj.get('linked_content', None) else obj.get('linked_content', None)
 
+    # Make sure all fields are in proper format
     def toDict(self):
         d = {'title':self.title.data,
              'description':self.description.data,

@@ -1,12 +1,12 @@
 import urllib
 import requests
 import datetime
-# import json
 import xml.etree.ElementTree as ET
 import pytz
-from xci import models
 import copy
+from xci import models
 
+# Medbiq namespaces and types used
 mb_namespaces = {'cf': 'http://ns.medbiq.org/competencyframework/v1/',
               'lom': 'http://ltsc.ieee.org/xsd/LOM',
               'pf': "http://ns.medbiq.org/performanceframework/v1/",
@@ -18,17 +18,15 @@ MB_COMP_TYPE = 'http://ns.medbiq.org/competencyobject/v1/'
 MB_COMP_FWK_TYPE = 'http://ns.medbiq.org/competencyframework/v1/'
 MB_PER_FWK_TYPE = 'http://ns.medbiq.org/performanceframework/v1/'
 
+# Returns if it is a Medbiq doc
 def isMB(comp_json):
     return (comp_json.get('type', '') == MB_COMP_TYPE) or \
            (comp_json.get('type', '') == MB_COMP_FWK_TYPE) or \
            (comp_json.get('type', '') == MB_PER_FWK_TYPE)
 
-def get_all_comp_frameworks():
-    return []
-
+# Return xml from given uri
 def getXML(uri):
     res = requests.get(addXMLSuffix(copy.copy(uri))).text
-    # xmlbit = ET.fromstring(res)
     return ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
 
 def parseComp(uri):
