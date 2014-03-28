@@ -1,12 +1,12 @@
 import urllib
 import requests
 import datetime
-# import json
 import xml.etree.ElementTree as ET
 import pytz
-from xci import models
 import copy
+from xci import models
 
+# Medbiq namespaces and types used
 mb_namespaces = {'cf': 'http://ns.medbiq.org/competencyframework/v1/',
               'lom': 'http://ltsc.ieee.org/xsd/LOM',
               'pf': "http://ns.medbiq.org/performanceframework/v1/",
@@ -18,19 +18,18 @@ MB_COMP_TYPE = 'http://ns.medbiq.org/competencyobject/v1/'
 MB_COMP_FWK_TYPE = 'http://ns.medbiq.org/competencyframework/v1/'
 MB_PER_FWK_TYPE = 'http://ns.medbiq.org/performanceframework/v1/'
 
+# Checks if the competency type is medbiq
 def isMB(comp_json):
     return (comp_json.get('type', '') == MB_COMP_TYPE) or \
            (comp_json.get('type', '') == MB_COMP_FWK_TYPE) or \
            (comp_json.get('type', '') == MB_PER_FWK_TYPE)
 
-def get_all_comp_frameworks():
-    return []
-
+# Return xml from given uri
 def getXML(uri):
     res = requests.get(addXMLSuffix(copy.copy(uri))).text
-    # xmlbit = ET.fromstring(res)
     return ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
 
+# parse the com.. takes the uri and tries to retrieve the doc at that location
 def parseComp(uri):
     types = {'{http://ns.medbiq.org/competencyframework/v1/}CompetencyFramework' : 
                 {'parser': parseMedBiqCompXML, 'getmodel': models.getCompetencyFramework},
@@ -38,10 +37,7 @@ def parseComp(uri):
                 {'parser': parseMedBiqCompXML, 'getmodel': models.getCompetency},
             '{http://ns.medbiq.org/performanceframework/v1/}PerformanceFramework' : 
                 {'parser': parseMedBiqPerfXML, 'getmodel': models.getPerformanceFramework} }
-    # url = uri
-    # res = requests.get(addXMLSuffix(copy.copy(uri))).text
-    # xmlbit = ET.fromstring(res)
-    # xmlbit = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
+    
     xmlbit = getXML(uri)
     existing = types[xmlbit.tag]['getmodel'](uri)
     if existing:
@@ -49,7 +45,8 @@ def parseComp(uri):
         return existing
     return types[xmlbit.tag]['parser'](xmlbit)
 
-
+# parse medbiq xml, xmlbit is the ET.XML obj of the comp doc, parentURI used for fwks 
+# when this parse is recursively called to parse children
 def parseMedBiqCompXML(xmlbit, parentURI=None):
     obj = {}
     obj['type'] = MB_COMP_FWK_TYPE if 'CompetencyFramework' in xmlbit.tag else MB_COMP_TYPE
@@ -59,13 +56,14 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
     obj['description'] = getDescription(xmlbit)
     obj['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
     obj = addParent(obj, parentURI)
+    # loop through all the comps nested in the current comp
     for include in xmlbit.findall('cf:Includes', namespaces=mb_namespaces):
         if not obj.get('competencies', False):
             obj['competencies'] = []
-        # url = addXMLSuffix(include.find('cf:Entry', namespaces=mb_namespaces).text.strip())
-        # nxt = ET.fromstring(requests.get(url).text)
-        # nxt = ET.XML(requests.get(url).text, parser=ET.XMLParser(encoding='utf-8'))
         uri = include.find('cf:Entry', namespaces=mb_namespaces).text.strip()
+        # children with either be a competency object or a competency framework
+        # try to find the competency object in db first, if not, then try the framework
+        # if those fail, go get it from the internet
         c = models.getCompetency(uri)
         if not c:
             c = models.getCompetencyFramework(uri)
@@ -80,9 +78,9 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         models.saveCompetency(obj)
     else:
         models.saveCompetencyFramework(obj)
-    # obj.pop('_id', False)
     return obj
 
+# obj is the comp in json, parenturi is string
 def addParent(obj, parentURI):
     if parentURI:
         if not obj.get('relations', False):
@@ -92,6 +90,7 @@ def addParent(obj, parentURI):
         obj['relations']['childof'].append(parentURI)
     return obj
 
+# obj is comp in json, childuri is string
 def addChild(obj, childURI):
     if childURI:
         if not obj.get('relations', False):
@@ -101,6 +100,7 @@ def addChild(obj, childURI):
         obj['relations']['parentof'].append(childURI)
     return obj
 
+# xmlbit is the ET.XML obj
 def parseMedBiqPerfXML(xmlbit):
     obj = {}
     obj['type'] = MB_PER_FWK_TYPE
@@ -112,9 +112,9 @@ def parseMedBiqPerfXML(xmlbit):
     obj['linked_content'] = getReferences(xmlbit)
     obj['components'] = getComponents(xmlbit)
     models.savePerformanceFramework(obj)
-    # obj.pop('_id', False)
     return obj
 
+# xmlbit is the ET.XML obj
 def getReferences(xmlbit):
     refs = []
     for ref in xmlbit.findall('pf:SupportingInformation/pf:Reference', namespaces=mb_namespaces):
@@ -127,6 +127,8 @@ def getReferences(xmlbit):
         refs.append(r)
     return refs
 
+# xmlbit is the ET.XML obj
+# for performance framework.. getting the info about each comp performance stuff
 def getComponents(xmlbit):
     obj = []
     for compo in xmlbit.findall('pf:Component', namespaces=mb_namespaces):
@@ -162,6 +164,7 @@ def getTitle(xml):
 def getDescription(xml):
     return xml.find('lom:lom/lom:general/lom:description/lom:string[@language="en"]', namespaces=mb_namespaces).text.strip()
 
+# the URL of the comps we use need .xml added to the URI of the comp
 def addXMLSuffix(url):
     if url.endswith('.xml'):
         return url
