@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-    <h1>Competency Demo <small>Demonstrating MedBiquitous' Competency Framework and the xAPI</small></h1>
+    <h1>xAPI / Competency Demo <small>Demonstrating xAPI, the Learning Registry, and competencies</small></h1>
 </div>
 {% if 'admin' in current_user.roles %}
 <div class="row">
     <div class="col-xs-2">
         <form class="form-inline" role="form" method="post" action="{{ url_for('reset_all') }}">
-            <button type="submit" class="btn btn-danger">Reset All</button>
+            <button type="submit" class="btn btn-danger">Delete All Data in System</button>
         </form>
     </div>
     <div class="col-xs-2">
         <form class="form-inline" role="form" method="post" action="{{ url_for('reset_comps') }}">
-            <button type="submit" class="btn btn-danger">Reset Competencies</button>
+            <button type="submit" class="btn btn-danger">Delete Only the Competencies</button>
         </form>
     </div>
 </div>
@@ -20,7 +20,23 @@
 {% endif %}
 <div class="row">
     <div class="col-xs-12">
-        <p>Welcome to the ADL Competency App! To get started, please login, or if you're new, sign up. Once you click the 'Get Started' button, the app will take you to the All Competencies page that lists all of the competency frameworks that have been added to the system. If there aren't any listed, there are three links above you can click to add those competencies to the system. Once you add the ones you want, they will appear below and you can click them to add them to YOUR competency list. Once they have been added to your list, click 'My Competencies' to begin the activites associated with each competency. When viewing the competency, you have the chance to change the LRS endpoint above it. Click each competency link listed to complete the necessary activity to achieve the competency. If you're looking at the Tetris competency, you'll be able to view the badges you have earned while playing by clicking the 'My Badges' button, or you can view all possible badges to attain by clicking the 'All Badges' button. NOTE: On each competency page you'll have the option to change the LRS endpoint. All that does is show you what competencies you have met at that particular endpoint for that particular subject. Everytime you leave the page it will get set back to the default endpoint.</p>
+        <p>
+        This app demonstrates one way to connect existing technologies to make smarter and more tailored tools for students. The goals are:
+        <ul>
+            <li>Show how a system can use the competency URIs to find the machine readable version of a competency.</li>
+            <li>Show how a competency URI can act as the object of some experience, or as part of the context of an experience.</li>
+            <li>Show how content relevant to a learners' goals can become discoverable in the Learning Registry (LR) by associating the competency URI to the content in the LR.</li>
+        </ul>
+        </p>
+    </div>
+    <div class="col-xs-12">
+        <h3>Getting Started</h3>
+        <p>
+        Log in or Sign up from the nav bar at the top of the page.
+        </p>
+        <p>
+        After logging in, explore the competencies and sets. Sign up for a competency. Search the LR and associate comptencies to the LR results.
+        </p>
     </div>
 </div>
 {% endblock %}
