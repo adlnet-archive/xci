@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Sign up</h1>
+<div class="page-header">
+    <h1>Sign up</h1>
+</div>
 <form class="form-horizontal" role="form" method="post">
 	{{ signup_form.hidden_tag() }}
 	{% for field, errors in signup_form.errors.iteritems() %}

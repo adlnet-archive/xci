@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Log in</h1>
+<div class="page-header">
+    <h1>Log in</h1>
+</div>
 <form class="form-horizontal" role="form" method="post">
 	{{ login_form.hidden_tag() }}
 		{% for field, errors in login_form.errors.iteritems() %}
