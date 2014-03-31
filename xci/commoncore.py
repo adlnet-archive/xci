@@ -15,43 +15,52 @@ def getfn(s):
     
     return ''.join(c for c in s if c in valid_chars)
 
-
+# common core is practically impossible to traverse. they essentially made a 
+# flat structure. instead of dealing with this nightmare, i just pull in everything.
+# at one time, they were at the urls listed in 'parts'. they since took the xml versions 
+# away. i leave them here in hopes that they will bring them back.
+# inspite of this, the system will try to read from file, assuming the xml is at the paths 
+# seen below at the ET.parse lines.
 def getCommonCore():
     parts = ["http://www.corestandards.org/Math.xml",
              "http://www.corestandards.org/ELA-Literacy.xml"]
     
     # see if common core objects are already in db
+    # if one is there all should be there
     exists = models.findoneComp({'type':'commoncoreobject'})
     if exists:
         return
 
     for p in parts:
+        # internet attempt
         try:
             res = requests.get(p).text
         except Exception, e:
             print e
-            return None
 
+        # try to parse internet result
         try:
             thexml = ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
         except ParseError:
             try: 
+                # parse failed try getting file version
+                # i'm looping so just figure out which of the 2 parts i'm on
                 if p == parts[0]:
                     thexml = ET.parse(path.abspath('../ccssi/xml/math.xml'))
                 else:
                     thexml = ET.parse(path.abspath('../ccssi/xml/ela-literacy.xml'))
             except Exception, e:
                 print e
+                # if that didn't work, give up
                 return None
         
         try:
             saveCCXMLinDB(thexml)
-            # saveCCXMLinDB(ET.fromstring(res))
         except Exception, e:
             print e
             return None
 
-
+# loop through all items and save data to db
 def saveCCXMLinDB(thexml):
     for item in thexml.iter('LearningStandardItem'):
         itemj = {}

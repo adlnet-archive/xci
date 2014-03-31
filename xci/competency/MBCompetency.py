@@ -14,6 +14,7 @@ NSMAP = {None : CO_NS,
          "hv" : "http://ns.medbiq.org/lom/vocab/v1/",
          "xsi" : XSI}
 
+# some crazy characters can wreak havok on this system.. these take em out
 def is_valid_xml_char_ordinal(i):
     """
     Defines whether char is valid to use in xml document
@@ -54,7 +55,7 @@ def __addLevels(parent, s):
     __getLOMString(lvl, s)
     return ed
     
-
+# makes medbiq xml
 def toXML(comp_json):
     root = __getRoot()
     lom = etree.SubElement(root, "{%s}" % NSMAP['lom'] + "lom")
