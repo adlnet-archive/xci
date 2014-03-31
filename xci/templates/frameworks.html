@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<h1>Competency Frameworks</h1>
 <form class="form-horizontal" role="form" method="post">
     {{ frameworks_form.hidden_tag() }}
     {% for field, errors in frameworks_form.errors.iteritems() %}

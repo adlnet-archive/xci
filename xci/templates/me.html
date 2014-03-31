@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>{{ current_user.id }} <small><span class="glyphicon glyphicon-heart"></span> your you page with stuff about you</small></h1>
+<h1>{{ current_user.id }} <small> all things related to you</small></h1>
 <div class="row">
     <div class="col-xs-12">
         <span class="glyphicon glyphicon-cog"></span><a href="{{ url_for('me_settings') }}"> Settings</a>

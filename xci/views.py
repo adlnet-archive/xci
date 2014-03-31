@@ -46,6 +46,15 @@ def load_user(user):
 # Return home template
 @app.route('/', methods=['GET'])
 def index():
+    uri = request.args.get('uri', None)
+    # the links on the competency page route back to this
+    # the uri param says which comp to load
+    if uri:
+        p = competency.parseComp(uri)
+        try:
+            return redirect(url_for("competencies"))
+        except Exception as e:
+            return make_response("%s<br>%s" % (str(e), p), 200)
     return render_template('home.html')
     
 # Logout user
@@ -158,6 +167,7 @@ def frameworks():
 # Return performance frameworks
 @app.route('/perfwks', methods=["GET", "POST"])
 def perfwks():
+    d = {}
     if request.method == 'GET':
         # Determine if asking for specific fwk or not
         uri = request.args.get('uri', None)
@@ -168,8 +178,18 @@ def perfwks():
             d['fwk'] = models.getPerformanceFramework(uri)
             d['userview'] = uview
             return render_template('perfwk-details.html', **d)
+        d['frameworks_form'] = FrameworksForm()
+    else:
+        # Validate submitted fwk uri/parse/add to system
+        ff = FrameworksForm(request.form)
+        if ff.validate_on_submit():
+            #add to system
+            competency.parseComp(ff.framework_uri.data)
+            d['frameworks_form'] = FrameworksForm()
+        else:
+            d['frameworks_form'] = ff
 
-    d = {'pfwks':models.findPerformanceFrameworks()}
+    d['pfwks'] = models.findPerformanceFrameworks()
     return render_template('performancefwks.html', **d)
 
 # Return all data pertaining to user
@@ -399,7 +419,6 @@ def edit_comp(objid):
     else:
         f = CompetencyEditForm(request.form)
         valid = f.validate()
-        print 'valid >>> %s' % valid
         if valid:
             models.updateCompetencyById(objid, f.toDict())
             # redirect to comp details

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<h1>Editing Competency</h1>
 <form class="form-horizontal" role="form" method="post">
     {{ cform.hidden_tag() }}
     {% for field, errors in cform.errors.iteritems() %}
