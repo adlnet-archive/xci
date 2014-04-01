@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page-header">
+    <h1>Sign up</h1>
+</div>
 <form class="form-horizontal" role="form" method="post">
 	{{ signup_form.hidden_tag() }}
 	{% for field, errors in signup_form.errors.iteritems() %}
@@ -15,6 +18,7 @@
 	</div>
 	{% else %}
 	<div class="form-group">
+		{{ field.label(class_='col-sm-2 control-label', for=field.id) }}
 		<div class="col-sm-10">
 		{{ field }}
 		</div>

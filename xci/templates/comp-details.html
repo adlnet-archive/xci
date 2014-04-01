@@ -12,14 +12,16 @@
     {% elif userview and comp.completed %}
         <small><span class="label label-success">completed</span></small>
     {% endif %}
-    {% if 'admin' in current_user.roles %}
-        <small><a href="{{ url_for('edit_comp', objid=cid) }}" class="btn btn-default">Edit</a></small>
-        {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
-            <small><a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}" class="btn btn-default">View as MedBiq Competency</a></small>
-        {% endif %}
-    {% endif %}
     </h1>
 </div>
+<p>
+    {% if 'admin' in current_user.roles %}
+        <a href="{{ url_for('edit_comp', objid=cid) }}">Edit</a>
+        {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
+             |  <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
+        {% endif %}
+    {% endif %}
+</p>
 <div class="col-xs-12">
 <dl class="dl-horizontal">
     <dt>uri</dt>

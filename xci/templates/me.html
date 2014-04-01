@@ -1,17 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page-header">
+    <h1>{{ current_user.id }} <small> all things related to you</small></h1>
+</div>
 <div class="row">
     <div class="col-xs-12">
-        <div class="page-header">
-            <h1>{{ current_user.id }}</h1>
-            <br>
-            <small>{{ name }}</small>
-            <br>
-            <small>{{ email }}</small>
-            <br>
-            <small>You have achieved {{ completed }} competencies. You are currently working on {{ started }} other competencies</small>
-            <br>
-            <small><a href="{{ url_for('me_settings') }}">Settings</a></small>
+        <span class="glyphicon glyphicon-cog"></span><a href="{{ url_for('me_settings') }}"> Settings</a>
+    </div>
+</div>
+<div class="page-header">
+    <div class="row">
+        <div class="col-xs-12">
+            <label for="username" class="col-xs-1 control-label">Name</label><small id="username">{{ name }}</small>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <label for="email" class="col-xs-1 control-label">Email</label><small id="email">{{ email }}</small>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <small><label for="achived" class="col-xs-1 control-label"><span class="badge">{{ completed }}</span></label><span id="achieved"> achieved competencies</span></small>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <small><label for="inprogress" class="col-xs-1 control-label"><span class="badge">{{ started }}</span></label><span id="inprogress"> competencies in progress</span></small>
         </div>
     </div>
 </div>
@@ -22,7 +37,7 @@
         {% if comp.met %}
             <div class="panel panel-success">
                 <div class="panel-heading">
-                    <h3 class="panel-title">{{ comp.title }}</h3>
+                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -32,14 +47,13 @@
                     {% else %}
                     There are no known linked LR resources
                     {% endfor %}
-                    </ul>                    
-                    <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
+                    </ul>
                 </div>
             </div>
         {% else %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">{{ comp.title }}</h3>
+                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -49,14 +63,13 @@
                     {% else %}
                     There are no known linked LR resources
                     {% endfor %}
-                    </ul>                    
-                    <p><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true" class="btn btn-primary btn-sm" role="button">Details</a></p>
+                    </ul>
                 </div>
             </div>
         {% endif %}
     </div>
     {% else %}
-    <div class="col-xs-12">You have no competencies yet!</div>
+    <div class="col-xs-12">You have not registered for any competencies</div>
     {% endfor %}
 </div>
 <div class="row">
@@ -84,7 +97,7 @@
         </div>
     </div>
     {% else %}
-    <div class="col-xs-12">No frameworks added to the system yet!</div>
+    <div class="col-xs-12">You have not registered for any competency frameworks</div>
     {% endfor %}
 </div>
 <div class="row">
@@ -112,7 +125,7 @@
         </div>
     </div>
     {% else %}
-    <div class="col-xs-12">No performance frameworks added to the system yet!</div>
+    <div class="col-xs-12">You have not registered for any performance frameworks</div>
     {% endfor %}
 </div>
 {% endblock %}

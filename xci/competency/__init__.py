@@ -29,7 +29,7 @@ def getXML(uri):
     res = requests.get(addXMLSuffix(copy.copy(uri))).text
     return ET.XML(res, parser=ET.XMLParser(encoding='utf-8'))
 
-# parse the com.. takes the uri and tries to retrieve the doc at that location
+# parse the comp.. takes the uri and tries to retrieve the doc at that location
 def parseComp(uri):
     types = {'{http://ns.medbiq.org/competencyframework/v1/}CompetencyFramework' : 
                 {'parser': parseMedBiqCompXML, 'getmodel': models.getCompetencyFramework},
