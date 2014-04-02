@@ -94,17 +94,18 @@ def saveCompetency(json_comp):
 
 # Updates all comps in fwks that are in the userprofiles
 def updateUserFwkByComp(comp):
-    try:
-        parents = comp['relations']['childof']
-    except KeyError:
-        parents = []
+    if not comp['type'] == 'commoncoreobject':
+        try:
+            parents = comp['relations']['childof']
+        except KeyError:
+            parents = []
 
-    # For each parent fwk the comp is in, update it in that userprofile
-    for uri in parents:
-        fwk = db.compfwk.find({'uri': uri})[0]
-        h = str(hash(uri))
-        set_field = 'compfwks.' + h
-        db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
+        # For each parent fwk the comp is in, update it in that userprofile
+        for uri in parents:
+            fwk = db.compfwk.find({'uri': uri})[0]
+            h = str(hash(uri))
+            set_field = 'compfwks.' + h
+            db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
 
 # Updates all comp fwks that contain that comp
 def updateCompInFwks(comp):
@@ -120,8 +121,11 @@ def updateUserComp(comp):
 
 # Update the comp with new LR data-calls other LR updates
 def updateCompetencyLR(c_id,lr_uri):
-    db.competency.update({'_id': ObjectId(c_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    comp = db.competency.find({'_id': ObjectId(c_id)})[0]
+    if isinstance(c_id, basestring):
+        c_id = ObjectId(c_id)
+
+    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
+    comp = db.competency.find({'_id': c_id})[0]
     del comp['_id']
     updateUserComp(comp)
     updateCompInFwks(comp)

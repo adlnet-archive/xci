@@ -51,5 +51,17 @@
     <dt>relations</dt>
     <dd>{{ comp.relations }}</dd>
 </dl>
+<dl class="dl-horizontal">
+    <dt>Linked LR data</dt>
+    <dd>
+        <ul>
+        {% for lr in comp.lr_data %}
+        <li><a href="{{ lr }}">LR Metadata</a></li>
+        {% else %}
+        There are no known linked LR resources
+        {% endfor %}
+        </ul>
+    </dd>
+</dl>
 </div>
 {% endblock %}
