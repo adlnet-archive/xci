@@ -213,35 +213,13 @@ def me():
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
-    uri = request.form.get('comp_uri', None)
-    userprof = models.getUserProfile(current_user.id)
     # Hashes of the uri of the comp are used to store them in the userprofile object
-    if uri:
-        h = str(hash(uri))
-        if not userprof.get('competencies', False):
-            userprof['competencies'] = {}
-        if uri and h not in userprof['competencies']:
-            comp = models.getCompetency(uri)
-            userprof['competencies'][h] = comp
-            models.saveUserProfile(userprof, current_user.id)
+    if request.form.get('comp_uri', None):
+        models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
     elif request.form.get('fwk_uri', False):
-        fwkuri = request.form.get('fwk_uri', None)
-        fh = str(hash(fwkuri))
-        if not userprof.get('compfwks', False):
-            userprof['compfwks'] = {}
-        if fwkuri and fh not in userprof['compfwks']:
-            fwk = models.getCompetencyFramework(fwkuri)
-            userprof['compfwks'][fh] = fwk
-            models.saveUserProfile(userprof, current_user.id)
+        models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
     elif request.form.get('perfwk_uri', False):
-        fwkuri = request.form.get('perfwk_uri', None)
-        fh = str(hash(fwkuri))
-        if not userprof.get('perfwks', False):
-            userprof['perfwks'] = {}
-        if fwkuri and fh not in userprof['perfwks']:
-            fwk = models.getPerformanceFramework(fwkuri)
-            userprof['perfwks'][fh] = fwk
-            models.saveUserProfile(userprof, current_user.id)
+        models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
 
     return redirect(url_for("me"))
 
