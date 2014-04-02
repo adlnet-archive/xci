@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page-header">
+    <h1>Learning Registry Search</h1>
+</div>    
+<p>You can search the Learning Registry and associate results to competencies by dragging the result to a competency</p>
 <div class="row">
 	<div class="col-md-12">
 		<form class="form-horizontal" role="form" id="searchform">
@@ -289,7 +293,7 @@
 
 		// For each comp in the array - add that data to the DOM and add droppable functionality
 		$.each(array, function(index, value){
-			$('#userComps').append("<div class='panel panel-default droppable' id='"+value._id+"' style='height:180px'>"
+			$('#userComps').append("<div class='panel panel-default droppable' id='"+value._id+"' style='height:180px;overflow:auto'>"
 									+ "<div class='panel-heading'>"
 									+ "<h3 class='panel-title'><a href='"+SCRIPT_ROOT+"competencies?uri="+value.uri+"'>"+value.title+"</a></h3>"
 									+ "</div>"
@@ -297,6 +301,8 @@
 									+ "<p>"+value.description+"</p></div>");
 			$('#userComps div').last()
 				.droppable({
+					tolerance: "pointer",
+					greedy: true,
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
 						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};

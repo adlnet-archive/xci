@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-	<span style="display:inline-block"><h1>Competencies</h1></span><span style="display:inline-block;padding-left:5em"><a href="/compsearch" class="btn btn-default">Search Comps</a></span>
+	<span style="display:inline-block"><h1>Competencies</h1></span><span style="display:inline-block;padding-left:5em"></span>
 </div>
-{% if 'admin' in current_user.roles %}
 <div class="row">
-    <div class="col-xs-2">
-        <a href="{{ url_for('new_comp') }}" class="btn btn-default">New Competency</a>
+    <div class="col-xs-12">
+    	<a href="/compsearch">Search Comps</a>
+		{% if 'admin' in current_user.roles %}
+        	|  <a href="{{ url_for('new_comp') }}">New Competency</a>
+		{% endif %}
     </div>
 </div>
 <div class="row"><div class="col-xs-12"><hr></div></div>
-{% endif %}
 <p>
 Click links to add competencies..
 <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>

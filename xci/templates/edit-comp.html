@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page-header">
+    <h1>Editing Competency</h1>
+</div>
 <form class="form-horizontal" role="form" method="post">
     {{ cform.hidden_tag() }}
     {% for field, errors in cform.errors.iteritems() %}

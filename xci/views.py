@@ -1,3 +1,6 @@
+import json
+import models
+import requests
 from xci import app, competency
 from xci.competency import MBCompetency as mbc
 from functools import wraps
@@ -7,20 +10,19 @@ from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
-import json
-import models
-import requests
-import pdb
 
+# Init login_manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# Init db
 mongo = MongoClient()
 db = mongo.xci
 
+# lr uri to obtain docs
 LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
 
-
+# Checks if the user has admin privileges
 def check_admin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -30,6 +32,7 @@ def check_admin(func):
         return func(*args, **kwargs)
     return wrapper
 
+# Load the user (needed for login manager)
 @login_manager.user_loader
 def load_user(user):
     if isinstance(user, basestring):
@@ -40,9 +43,12 @@ def load_user(user):
         u_id = user.get_id()
         return user
 
+# Return home template
 @app.route('/', methods=['GET'])
 def index():
     uri = request.args.get('uri', None)
+    # the links on the competency page route back to this
+    # the uri param says which comp to load
     if uri:
         p = competency.parseComp(uri)
         try:
@@ -51,17 +57,20 @@ def index():
             return make_response("%s<br>%s" % (str(e), p), 200)
     return render_template('home.html')
     
+# Logout user
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
 
+# Login user
 @app.route('/login', methods=["GET","POST"])
 def login():
     if request.method == 'GET':
         return render_template('login.html', login_form=LoginForm())
     else:
+        # If posting and validated, log them in
         lf = LoginForm(request.form)
         if lf.validate_on_submit():
             user = User(lf.username.data, generate_password_hash(lf.password.data))
@@ -70,11 +79,13 @@ def login():
         else:
             return render_template("login.html", login_form=lf)
 
+# Register user
 @app.route('/sign_up', methods=["GET", "POST"])
 def sign_up():
     if request.method == 'GET':
         return render_template('sign_up.html', signup_form=RegistrationForm(), hide=True)
     else:
+        # Add necessary roles as needed
         rf = RegistrationForm(request.form)
         if rf.validate_on_submit():
             role = rf.role.data
@@ -85,6 +96,7 @@ def sign_up():
             else:
                 role = ['student']
 
+            # Add user to db and login
             users = db.userprofiles
             users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
                 'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 'roles':role})
@@ -94,8 +106,10 @@ def sign_up():
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
 
+# Competency view
 @app.route('/competencies')
 def competencies():
+    # Look for comp args, if none display all comps
     d = {}
     uri = request.args.get('uri', None)
     uview = request.args.get('userview', False)
@@ -106,6 +120,7 @@ def competencies():
         d['cid'] = comp.pop('_id')
         d['comp'] = comp
         d['userview'] = uview
+        # If medbiq comp display xml if so since it's the original and not lossy internal one
         if mb:
             if not comp.get('edited', False) and competency.isMB(comp):
                 try:
@@ -115,7 +130,6 @@ def competencies():
             else:
                 thexml = mbc.toXML(comp)
             return Response(thexml, mimetype='application/xml')
-            # return render_template('comp-mb-edit.html', **d)
         else:
             compuri = d['uri']
             if 'adlnet' in d['uri']:
@@ -128,14 +142,19 @@ def competencies():
                 ids = [s['doc_ID'] for s in lrresults['documents']]
                 for d_id in ids:
                     models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+                updated_comp = models.getCompetency(uri, objectid=True)
+                d['comp'] = updated_comp
+
             return render_template('comp-details.html', **d)
 
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)
 
+# Return competency frameworks
 @app.route('/frameworks', methods=["GET", "POST"])
 def frameworks():
     if request.method == 'GET':
+        # Determine if requesting specific fwk or not
         uri = request.args.get('uri', None)
         uview = request.args.get('userview', False)
         if uri:
@@ -147,6 +166,7 @@ def frameworks():
 
         return_dict = {'frameworks_form': FrameworksForm()}
     else:
+        # Validate submitted fwk uri/parse/add to system
         ff = FrameworksForm(request.form)
         if ff.validate_on_submit():
             #add to system
@@ -158,9 +178,12 @@ def frameworks():
     return_dict['cfwks'] = models.findCompetencyFrameworks()
     return render_template('frameworks.html', **return_dict)
 
+# Return performance frameworks
 @app.route('/perfwks', methods=["GET", "POST"])
 def perfwks():
+    d = {}
     if request.method == 'GET':
+        # Determine if asking for specific fwk or not
         uri = request.args.get('uri', None)
         uview = request.args.get('userview', False)
         if uri:
@@ -169,10 +192,21 @@ def perfwks():
             d['fwk'] = models.getPerformanceFramework(uri)
             d['userview'] = uview
             return render_template('perfwk-details.html', **d)
+        d['frameworks_form'] = FrameworksForm()
+    else:
+        # Validate submitted fwk uri/parse/add to system
+        ff = FrameworksForm(request.form)
+        if ff.validate_on_submit():
+            #add to system
+            competency.parseComp(ff.framework_uri.data)
+            d['frameworks_form'] = FrameworksForm()
+        else:
+            d['frameworks_form'] = ff
 
-    d = {'pfwks':models.findPerformanceFrameworks()}
+    d['pfwks'] = models.findPerformanceFrameworks()
     return render_template('performancefwks.html', **d)
 
+# Return all data pertaining to user
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
@@ -181,20 +215,21 @@ def me():
     user_comps = user['competencies'].values()
     user_fwks = user['compfwks'].values()
     user_pfwks = user['perfwks'].values()
-    # user_profiles = user['lrsprofiles']
 
-    # completed_comps = [c for c in user_comps if c['completed'] == True].count()
+    # Calculate complete competencies for users and return count
     completed_comps = sum(1 for c in user_comps if c.get('completed',False))
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
     return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
 
+# Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
     uri = request.form.get('comp_uri', None)
     userprof = models.getUserProfile(current_user.id)
+    # Hashes of the uri of the comp are used to store them in the userprofile object
     if uri:
         h = str(hash(uri))
         if not userprof.get('competencies', False):
@@ -224,12 +259,14 @@ def add_comp():
 
     return redirect(url_for("me"))
 
+# Loads common core xml from xml document outside of project
 @app.route('/cc')
 def load_cc():
     from xci import commoncore
     commoncore.getCommonCore()
     return redirect(url_for("competencies"))
 
+# Return userprofile for settings page
 @app.route('/me/settings', methods=["GET"])
 @login_required
 def me_settings():
@@ -239,17 +276,19 @@ def me_settings():
     
     return render_template('mysettings.html', user_profiles=user_profiles)
 
+# Update the LRS endpoints for the user
 @app.route('/me/settings/update_endpoint', methods=["POST"])
 @login_required
 def update_endpoint():
     username = current_user.id
-    #Werkzeug returns immutabledict object when multiple forms are on page. have to copy to get values
+    # Werkzeug returns immutabledict object when multiple forms are on page. have to copy to get values
     sf = request.form.copy()
     
     default = False
     if 'default' in sf.keys():
         default = True
 
+    # Update profile with form input
     user = db.userprofiles.find_one({'username':username})
     for profile in user['lrsprofiles']:
         if profile['name'] == sf['name']:
@@ -261,12 +300,9 @@ def update_endpoint():
             profile['default'] = False
 
     db.userprofiles.update({'username':username}, user)
-
-    # db.userprofiles.update({'username':username, 'lrsprofiles.name': sf['name']}, {'$set':{'name':sf['name'],'endpoint':sf['endpoint'], 'auth':sf['auth'],
-    #     'password': generate_password_hash(sf['password']), 'default':default}})
-
     return redirect(url_for('me'))
 
+# Add an LRS endpoint to a user profile
 @app.route('/me/settings/add_endpoint', methods=["POST"])
 @login_required
 def add_endpoint():
@@ -276,9 +312,8 @@ def add_endpoint():
 
     existing_names = [p['name'] for p in user['lrsprofiles']]
 
-    if af['newname'] in existing_names:
-        pass
-    else:
+    # Make sure name doesn't exist already
+    if not af['newname'] in existing_names:
         new_prof = {}
         default = False
         if 'newdefault' in af.keys():
@@ -299,8 +334,10 @@ def add_endpoint():
     
     return redirect(url_for('me'))
 
+# Load LR search page
 @app.route('/lr_search', methods=["GET"])
 def lr_search():
+    # Get all comps/fwks/perfwks and parse id so it can be displayed
     comps = models.findCompetencies(sort='title')
     compfwks = models.findCompetencyFrameworks()
     perfwks = models.findPerformanceFrameworks()
@@ -314,6 +351,7 @@ def lr_search():
     for p in perfwks:
         p['_id'] = str(p['_id'])
 
+    # Need to escape double quote so can pass to JS
     jcomps = json.dumps(comps).replace('"', '\\"')
     jcfwks = json.dumps(compfwks).replace('"', '\\"')
     jpfwks = json.dumps(perfwks).replace('"', '\\"')
@@ -321,39 +359,43 @@ def lr_search():
     return render_template('lrsearch.html', search_form=SearchForm(), comps=jcomps,
         compfwks=jcfwks, perfwks=jpfwks)
 
+# Link lr data to comp
 @app.route('/link_lr_comp', methods=['POST'])
 def link_lr_comp():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
 
     try:
-        models.updateCompetencyLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
+        models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
     return "Successfully linked competency"
 
+# Link lr data to comp fwk
 @app.route('/link_lr_cfwk', methods=['POST'])
 def link_lr_cfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
 
     try:
-        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
+        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
     return "Successfully linked competency framework"
 
+# Linke lr data to per fwk
 @app.route('/link_lr_pfwk', methods=['POST'])
 def link_lr_pfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
 
     try:
-        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri + '&by_doc_ID=T')
+        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
     return "Successfully linked performance framework"
 
+# Admin reset button to clear entire db
 @app.route('/admin/reset', methods=["POST"])
 @check_admin
 def reset_all():
@@ -361,12 +403,14 @@ def reset_all():
     models.dropAll()
     return redirect(url_for("index"))
 
+# Admin comp reset button to clear all comp collections
 @app.route('/admin/reset/comps', methods=["POST"])
 @check_admin
 def reset_comps():
     models.dropCompCollections()
     return redirect(url_for("index"))
 
+# Create new competencies
 @app.route('/admin/competency/new', methods=['GET', 'POST'])
 @check_admin
 def new_comp():
@@ -379,6 +423,7 @@ def new_comp():
             return redirect(url_for('competencies', uri=f.uri.data))
         return render_template('edit-comp.html', **{'cform': f})
 
+# Edit competencies
 @app.route('/admin/competency/edit/<objid>', methods=['GET', 'POST'])
 @check_admin
 def edit_comp(objid):
@@ -388,17 +433,14 @@ def edit_comp(objid):
     else:
         f = CompetencyEditForm(request.form)
         valid = f.validate()
-        print 'valid >>> %s' % valid
         if valid:
-            #add to 
-            # print "json>>>>  %s" % f.toJSON()
             models.updateCompetencyById(objid, f.toDict())
             # redirect to comp details
             return redirect(url_for('competencies', uri=f.uri.data))
         return_dict = {'cform': f}
-
     return render_template('edit-comp.html', **return_dict)
 
+# Search all competencies added to system right now
 @app.route('/compsearch', methods=['GET', 'POST'])
 def compsearch():
     comps = []

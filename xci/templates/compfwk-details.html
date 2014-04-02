@@ -20,7 +20,7 @@
     </dl>
     <dl class="dl-horizontal">
         <dt>description</dt>
-        <dd>{{ fwk.description }}</dd>
+        <dd>{{ fwk.description|safe }}</dd>
     </dl>
     <dl class="dl-horizontal">
         <dt>levels</dt>
@@ -50,7 +50,7 @@
             <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{c.uri}}">{{ c.title }}</a></h3>
         </div>
         <div class="panel-body">
-            <p>{{ c.description }}</p>
+            <p>{{ c.description|safe }}</p>
             <ul>
             {% for lr in c.lr_data %}
             <li><a href="{{ lr }}">LR Metadata</a></li>
