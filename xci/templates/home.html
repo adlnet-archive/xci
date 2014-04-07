@@ -20,7 +20,7 @@
         The Badge Classes for Tetris open badges can be found here:
         <ul>
             {% for b in badges %}
-            <li><a href="{{ url_for('index') }}/tetris/{{ b._id }}">{{ b.name }}</a></li>
+            <li><a href="/tetris/{{ b._id }}">{{ b.name }}</a></li>
             {% endfor %}
         </ul>    
 </div>

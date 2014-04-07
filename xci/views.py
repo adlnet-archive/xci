@@ -55,11 +55,11 @@ def index():
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
-    import pdb
-    pdb.set_trace()
-    badges = db.badgeclass.find()
+
+    badges = [x for x in db.badgeclass.find()]
     for b in badges:
         b['_id'] = str(b['_id'])
+
     return render_template('home.html', badges=badges)
     
 # Logout user
