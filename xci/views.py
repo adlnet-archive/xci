@@ -4,7 +4,7 @@ import requests
 from xci import app, competency
 from xci.competency import MBCompetency as mbc
 from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -55,7 +55,12 @@ def index():
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
-    return render_template('home.html')
+    import pdb
+    pdb.set_trace()
+    badges = db.badgeclass.find()
+    for b in badges:
+        b['_id'] = str(b['_id'])
+    return render_template('home.html', badges=badges)
     
 # Logout user
 @app.route('/logout')
@@ -451,4 +456,16 @@ def compsearch():
         if sf.validate_on_submit():
             key = sf.search.data
             comps = models.searchComps(key)
-        return render_template('compsearch.html', comps=comps, search_form=sf)        
+        return render_template('compsearch.html', comps=comps, search_form=sf)
+
+@app.route('/check_badges', methods=['GET'])
+def check_badges():
+    return render_template('check_badges.html')
+
+@app.route('/tetris/issuer')
+def tetris_issuer():
+    return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
+
+@app.route('/tetris/<badgeclass>')
+def tetris_badge(badgeclass):
+    return models.getBadgeClass(badgeclass)

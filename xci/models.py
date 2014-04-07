@@ -9,6 +9,9 @@ from pymongo import MongoClient
 mongo = MongoClient()
 db = mongo.xci
 
+def getBadgeClass(class_id):
+    return jsonify(db.badgeclass.find_one({'_id': ObjectId(class_id)}))
+
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
     def __init__(self, userid, password):

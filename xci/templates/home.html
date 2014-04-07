@@ -16,6 +16,14 @@
         </form>
     </div>
 </div>
+<div class="row">
+        The Badge Classes for Tetris open badges can be found here:
+        <ul>
+            {% for b in badges %}
+            <li><a href="{{ url_for('index') }}/tetris/{{ b._id }}">{{ b.name }}</a></li>
+            {% endfor %}
+        </ul>    
+</div>
 <div class="row"><div class="col-xs-12"><hr></div></div>
 {% endif %}
 <div class="row">

@@ -1,0 +1,30 @@
+[
+	{
+		"name": "Tetris Times",
+		"description": "Played for a long time in tetris.",
+		"image": "http://12.109.40.34/performance-framework/xapi/tetris/times_badge.png",
+		"criteria": "http://12.109.40.34/performance-framework/xapi/tetris.xml",
+		"issuer": "http://12.109.40.34/performance-framework/xapi/tetris/issuer.json"
+	},
+	{
+		"name": "Tetris Levels",
+		"description": "Passed an impressive amount of levels in tetris.",
+		"image": "http://12.109.40.34/performance-framework/xapi/tetris/levels_badge.png",
+		"criteria": "http://12.109.40.34/performance-framework/xapi/tetris.xml",
+		"issuer": "http://12.109.40.34/performance-framework/xapi/tetris/issuer.json"
+	},
+	{
+		"name": "Tetris Lines",
+		"description": "Made a bunch of lines in tetris.",
+		"image": "http://12.109.40.34/performance-framework/xapi/tetris/lines_badge.png",
+		"criteria": "http://12.109.40.34/performance-framework/xapi/tetris.xml",
+		"issuer": "http://12.109.40.34/performance-framework/xapi/tetris/issuer.json"
+	},
+	{
+		"name": "Tetris Scores",
+		"description": "Achieved a worthy score in tetris.",
+		"image": "http://12.109.40.34/performance-framework/xapi/tetris/scores_badge.png",
+		"criteria": "http://12.109.40.34/performance-framework/xapi/tetris.xml",
+		"issuer": "http://12.109.40.34/performance-framework/xapi/tetris/issuer.json"
+	}
+]
