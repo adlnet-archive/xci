@@ -74,7 +74,7 @@ def addPerFwkToUserProfile(uri, userid):
         fwk = getPerformanceFramework(uri)
         userprof['perfwks'][fh] = fwk
         # find the competency object uri for each component and add it to the user's list of competencies
-        for curi in (x['entry'] for b in fwk['components'] for x in b['competencies'] if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+        for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
             addCompToUserProfile(curi, userid, userprof)
         saveUserProfile(userprof, userid)
 

@@ -1,7 +1,8 @@
+import base64
 import json
 import models
 import requests
-from xci import app, competency
+from xci import app, competency, performance
 from xci.competency import MBCompetency as mbc
 from functools import wraps
 from flask import render_template, redirect, flash, url_for, request, make_response, Response
@@ -271,8 +272,9 @@ def update_endpoint():
     for profile in user['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
-            profile['auth'] = sf['auth']
-            profile['password'] = generate_password_hash(sf['password'])
+            profile['username'] = sf['username']
+            profile['password'] = sf['password']
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['username'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -299,8 +301,9 @@ def add_endpoint():
 
         new_prof['name'] = af['newname']
         new_prof['endpoint'] = af['newendpoint']
-        new_prof['auth'] = af['newauth']
-        new_prof['password'] = generate_password_hash(af['newpassword'])
+        new_prof['username'] = af['newusername']
+        new_prof['password'] = af['newpassword']
+        new_prof['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (new_prof['username'], new_prof['password']))
         new_prof['default'] = default
 
         if default:
@@ -430,3 +433,17 @@ def compsearch():
             key = sf.search.data
             comps = models.searchComps(key)
         return render_template('compsearch.html', comps=comps, search_form=sf)        
+
+@app.route('/test')
+def test():
+    uri = "http://12.109.40.34/performance-framework/xapi/tetris"
+    userid = "tom"
+    # seed system with perfwk
+    # objid = models.getPerformanceFramework(uri)
+    competency.parseComp(uri)
+    # reg user with perfwk
+    models.addPerFwkToUserProfile(uri, userid)
+
+    #### now do the performance stuff
+    p = performance.evaluate(uri, userid)
+    return Response(json.dumps(p), mimetype='application/json')
