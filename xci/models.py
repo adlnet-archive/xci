@@ -4,10 +4,16 @@ import pytz
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
+from flask import jsonify
 
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+
+def getBadgeClass(class_id):
+    badge = db.badgeclass.find_one({'_id': ObjectId(class_id)})
+    del badge['_id']
+    return jsonify(badge)
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):

@@ -32,6 +32,10 @@ Add index
 	mongo xci
 	db.competency.ensureIndex({"title": 1})
 
+Seed the DB with badgeclass data (while in root of project)
+
+	mongoimport --db xci --collection badgeclass --type json --file ./xci/static/badge_classes/tetris_classes.json --jsonArray
+
 Run
 
 	python runserver.py
