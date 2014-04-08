@@ -4,7 +4,7 @@ import requests
 from xci import app, competency
 from xci.competency import MBCompetency as mbc
 from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -468,4 +468,11 @@ def tetris_issuer():
 
 @app.route('/tetris/<badgeclass>')
 def tetris_badge(badgeclass):
-    return models.getBadgeClass(badgeclass)
+    b_class = models.getBadgeClass(badgeclass)
+    if not b_class:
+        abort(404)
+    return b_class 
+
+@app.route('/tetris/<badgeclass>/badgepic')
+def tetris_badge_pic(badgeclass):
+    return url_for('static', filename='spacecat.png')

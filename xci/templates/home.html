@@ -21,6 +21,8 @@
         <ul>
             {% for b in badges %}
             <li><a href="/tetris/{{ b._id }}">{{ b.name }}</a></li>
+            {% else %}
+            No Badge Classes have been added!
             {% endfor %}
         </ul>    
 </div>

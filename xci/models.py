@@ -12,6 +12,8 @@ db = mongo.xci
 
 def getBadgeClass(class_id):
     badge = db.badgeclass.find_one({'_id': ObjectId(class_id)})
+    if not badge:
+        return None
     del badge['_id']
     return jsonify(badge)
 
