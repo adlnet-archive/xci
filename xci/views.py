@@ -439,9 +439,9 @@ def compsearch():
             comps = models.searchComps(key)
         return render_template('compsearch.html', comps=comps, search_form=sf)        
 
-@app.route('/check_badges', methods=['GET'])
+@app.route('/check_badges', methods=['POST'])
 def check_badges():
-    uri = request.args.get('uri', None)
+    uri = request.form.get('uri', None)
     p = performance.evaluate(uri, current_user.id)
     return Response(json.dumps(p), mimetype='application/json')
     # return render_template('check_badges.html')
