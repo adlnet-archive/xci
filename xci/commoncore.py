@@ -37,6 +37,7 @@ def getCommonCore():
             res = requests.get(p).text
         except Exception, e:
             print e
+            res = ""
 
         # try to parse internet result
         try:

@@ -12,8 +12,10 @@
     {% elif current_user.is_authenticated() and userview %}
         {% if fwk.uri == 'http://12.109.40.34/performance-framework/xapi/tetris' %}
         <br/>
-        <a href="https://lrs.adlnet.gov/prototypes/" class="btn btn-primary" role="button" target="_blank">Play Tetris!</a>
-        <a href="{{ url_for('check_badges') }}" class="btn btn-primary" role="button">Check for Badges</a>
+        <form class="form-inline" role="form" action="{{ url_for('check_badges') }}" method="post">
+            <input type="hidden" name="uri" value="{{fwk.uri}}">
+            <button type="submit" class="btn btn-primary">Check for Badges</button>
+        </form>
         <a href="{{ url_for('tetris_issuer') }}" class="btn btn-primary" role="button">View Earned Badges</a>
         {% endif %}        
         {% if fwk.completed %}

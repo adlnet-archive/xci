@@ -47,6 +47,45 @@ def saveUserProfile(profile, userid=None):
 def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
+# Given a URI and Userid, store a copy of the comp in the user profile
+def addCompToUserProfile(uri, userid, userprof=None):
+    if not userprof:
+        userprof = getUserProfile(userid)
+    h = str(hash(uri))
+    if not userprof.get('competencies', False):
+        userprof['competencies'] = {}
+    if uri and h not in userprof['competencies']:
+        comp = getCompetency(uri)
+        userprof['competencies'][h] = comp
+        saveUserProfile(userprof, userid)
+
+# Given a URI and Userid, store a copy of the framework and comps in user profile
+def addFwkToUserProfile(uri, userid):
+    userprof = getUserProfile(userid)
+    fh = str(hash(uri))
+    if not userprof.get('compfwks', False):
+        userprof['compfwks'] = {}
+    if uri and fh not in userprof['compfwks']:
+        fwk = getCompetencyFramework(uri)
+        userprof['compfwks'][fh] = fwk
+        for c in fwk['competencies']:
+            addCompToUserProfile(c['uri'], userid, userprof)
+        saveUserProfile(userprof, userid)
+
+# Given URI and User id, store performance fwk, comp fwk, and comps in user profile
+def addPerFwkToUserProfile(uri, userid):
+    userprof = getUserProfile(userid)
+    fh = str(hash(uri))
+    if not userprof.get('perfwks', False):
+        userprof['perfwks'] = {}
+    if uri and fh not in userprof['perfwks']:
+        fwk = getPerformanceFramework(uri)
+        userprof['perfwks'][fh] = fwk
+        # find the competency object uri for each component and add it to the user's list of competencies
+        for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+            addCompToUserProfile(curi, userid, userprof)
+        saveUserProfile(userprof, userid)
+
 # Use on search comp page-searches for search keyword in comp titles
 def searchComps(key):
     regx = re.compile(key, re.IGNORECASE)
@@ -170,8 +209,10 @@ def updateCompetencyFramework(json_fwk):
     db.compfwk.update({'uri':json_fwk['uri']}, json_fwk, manipulate=False)
 
 # Return one comp fwk based on uri
-def getCompetencyFramework(uri):
-    return db.compfwk.find_one({'uri':uri})
+def getCompetencyFramework(uri, objectid=False):
+    if objectid:
+        return db.compfwk.find_one({'uri':uri})
+    return db.compfwk.find_one({'uri': uri}, {'_id':0})
 
 # Update or create per fwk
 def savePerformanceFramework(json_fwk):
@@ -185,8 +226,10 @@ def updatePerformanceFramework(json_fwk):
     val = db.perfwk.update({'uri':json_fwk['uri']}, json_fwk, manipulate=False)
 
 # Get one per fwk
-def getPerformanceFramework(uri):
-    return db.perfwk.find_one({'uri':uri})
+def getPerformanceFramework(uri, objectid=False):
+    if objectid:
+        return db.perfwk.find_one({'uri':uri})
+    return db.perfwk.find_one({'uri':uri}, {'_id':0})
 
 # Return per fwk based on search criteria
 def findPerformanceFrameworks(d=None):

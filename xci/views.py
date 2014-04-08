@@ -1,7 +1,8 @@
+import base64
 import json
 import models
 import requests
-from xci import app, competency
+from xci import app, competency, performance
 from xci.competency import MBCompetency as mbc
 from functools import wraps
 from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort
@@ -232,35 +233,13 @@ def me():
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
-    uri = request.form.get('comp_uri', None)
-    userprof = models.getUserProfile(current_user.id)
     # Hashes of the uri of the comp are used to store them in the userprofile object
-    if uri:
-        h = str(hash(uri))
-        if not userprof.get('competencies', False):
-            userprof['competencies'] = {}
-        if uri and h not in userprof['competencies']:
-            comp = models.getCompetency(uri)
-            userprof['competencies'][h] = comp
-            models.saveUserProfile(userprof, current_user.id)
+    if request.form.get('comp_uri', None):
+        models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
     elif request.form.get('fwk_uri', False):
-        fwkuri = request.form.get('fwk_uri', None)
-        fh = str(hash(fwkuri))
-        if not userprof.get('compfwks', False):
-            userprof['compfwks'] = {}
-        if fwkuri and fh not in userprof['compfwks']:
-            fwk = models.getCompetencyFramework(fwkuri)
-            userprof['compfwks'][fh] = fwk
-            models.saveUserProfile(userprof, current_user.id)
+        models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
     elif request.form.get('perfwk_uri', False):
-        fwkuri = request.form.get('perfwk_uri', None)
-        fh = str(hash(fwkuri))
-        if not userprof.get('perfwks', False):
-            userprof['perfwks'] = {}
-        if fwkuri and fh not in userprof['perfwks']:
-            fwk = models.getPerformanceFramework(fwkuri)
-            userprof['perfwks'][fh] = fwk
-            models.saveUserProfile(userprof, current_user.id)
+        models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
 
     return redirect(url_for("me"))
 
@@ -298,8 +277,9 @@ def update_endpoint():
     for profile in user['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
-            profile['auth'] = sf['auth']
-            profile['password'] = generate_password_hash(sf['password'])
+            profile['username'] = sf['username']
+            profile['password'] = sf['password']
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['username'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -326,8 +306,9 @@ def add_endpoint():
 
         new_prof['name'] = af['newname']
         new_prof['endpoint'] = af['newendpoint']
-        new_prof['auth'] = af['newauth']
-        new_prof['password'] = generate_password_hash(af['newpassword'])
+        new_prof['username'] = af['newusername']
+        new_prof['password'] = af['newpassword']
+        new_prof['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (new_prof['username'], new_prof['password']))
         new_prof['default'] = default
 
         if default:
@@ -456,11 +437,14 @@ def compsearch():
         if sf.validate_on_submit():
             key = sf.search.data
             comps = models.searchComps(key)
-        return render_template('compsearch.html', comps=comps, search_form=sf)
+        return render_template('compsearch.html', comps=comps, search_form=sf)        
 
-@app.route('/check_badges', methods=['GET'])
+@app.route('/check_badges', methods=['POST'])
 def check_badges():
-    return render_template('check_badges.html')
+    uri = request.form.get('uri', None)
+    p = performance.evaluate(uri, current_user.id)
+    return Response(json.dumps(p), mimetype='application/json')
+    # return render_template('check_badges.html')
 
 @app.route('/tetris/issuer')
 def tetris_issuer():
@@ -478,3 +462,17 @@ def tetris_badge_pic(badgeclass, badgepicname):
     if not models.getBadgeClass(badgeclass):
         abort(404)
     return url_for('static', filename='spacecat.png')
+
+@app.route('/test')
+def test():
+    uri = "http://12.109.40.34/performance-framework/xapi/tetris"
+    userid = "tom"
+    # seed system with perfwk
+    # objid = models.getPerformanceFramework(uri)
+    competency.parseComp(uri)
+    # reg user with perfwk
+    models.addPerFwkToUserProfile(uri, userid)
+
+    #### now do the performance stuff
+    p = performance.evaluate(uri, userid)
+    return Response(json.dumps(p), mimetype='application/json')
