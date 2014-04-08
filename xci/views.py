@@ -473,6 +473,8 @@ def tetris_badge(badgeclass):
         abort(404)
     return b_class 
 
-@app.route('/tetris/<badgeclass>/badgepic')
-def tetris_badge_pic(badgeclass):
+@app.route('/tetris/<badgeclass>/<badgepicname>')
+def tetris_badge_pic(badgeclass, badgepicname):
+    if not models.getBadgeClass(badgeclass):
+        abort(404)
     return url_for('static', filename='spacecat.png')
