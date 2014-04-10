@@ -4,18 +4,33 @@ import pytz
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
-from flask import jsonify
+from flask import jsonify, current_app
 
 # Init db
 mongo = MongoClient()
 db = mongo.xci
 
-def getBadgeClass(class_id):
-    badge = db.badgeclass.find_one({'_id': ObjectId(class_id)})
+def getBadgeIdByName(name):
+    return str(db.badgeclass.find_one({'name': name})['_id'])
+
+def insertAssertion(ba):
+    _id = db.badgeassertion.insert(ba)
+    db.badgeassertion.update({'_id':_id}, {'uid':_id})
+
+def getBadgeClass(c_id, p_id):
+    badge = db.badgeclass.find_one({'name': '%s-%s' % (c_id, p_id)})
     if not badge:
         return None
     del badge['_id']
     return jsonify(badge)
+
+def getBadgeAssertion(ass_id):
+    ass = db.badgeassertion.find_one({'_id': ObjectId(ass_id)})
+    if not ass:
+        return None
+    del ass['_id']
+    return jsonify(ass)
+
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
@@ -220,6 +235,19 @@ def savePerformanceFramework(json_fwk):
         updatePerformanceFramework(json_fwk)
     else:
         db.perfwk.insert(json_fwk, manipulate=False)
+
+        # Create badgeclasses
+        for c in json_fwk['components']:
+            for p in c['performancelevels']:
+                badgeclass = {
+                    "name": '%s-%s' % (c['id'],p['id']),
+                    "description": p['description'],
+                    "image": '%s/badgeclass/%s/%s/%s/badge' % (current_app.config['DOMAIN_NAME'], json_fwk['uuidurl'], c['id'], p['id']),
+                    "criteria": json_fwk['uri'] + '.xml',
+                    "issuer": '%s/badgeclass/issuer' % current_app.config['DOMAIN_NAME']
+                }
+                db.badgeclass.insert(badgeclass)
+
 
 # Update actual per fwk
 def updatePerformanceFramework(json_fwk):

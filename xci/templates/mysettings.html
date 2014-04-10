@@ -34,7 +34,7 @@
 		<div class="col-sm-offset-2 col-sm-10">
 			<div class="checkbox">
 				<label>
-					{% if profile['default'] %}
+					{% if profile['default'] == True %}
 					<input type="checkbox" name="default" id="{{ profile['name'] + ' default' }}" checked>Set as default
 					{% else %}
 					<input type="checkbox" name="default" id="{{ profile['name'] + ' default' }}">Set as default

@@ -446,22 +446,39 @@ def check_badges():
     return Response(json.dumps(p), mimetype='application/json')
     # return render_template('check_badges.html')
 
-@app.route('/tetris/issuer')
+@app.route('/badgeclass/issuer')
 def tetris_issuer():
     return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
 
-@app.route('/tetris/<badgeclass>')
-def tetris_badge(badgeclass):
-    b_class = models.getBadgeClass(badgeclass)
+@app.route('/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
+def tetris_badge(perfwk_id, component_id, perf_id):
+    b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
+    if not b_fwk:
+        abort(404)
+    
+    b_class = models.getBadgeClass(component_id, perf_id)
     if not b_class:
         abort(404)
     return b_class 
 
-@app.route('/tetris/<badgeclass>/<badgepicname>')
-def tetris_badge_pic(badgeclass, badgepicname):
-    if not models.getBadgeClass(badgeclass):
+@app.route('/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
+def tetris_badge_pic(perfwk_id, component_id, perf_id):
+    b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
+    if not b_fwk:
+        abort(404)
+    
+    b_class = models.getBadgeClass(component_id, perf_id)
+    if not b_class:
         abort(404)
     return url_for('static', filename='spacecat.png')
+
+
+@app.route('/tetris/assertions/<ass_id>')
+def tetris_assertion(ass_id):
+    ass = models.getBadgeAssertion(ass_id)
+    if not ass:
+        abort(404)
+    return ass
 
 @app.route('/test')
 def test():

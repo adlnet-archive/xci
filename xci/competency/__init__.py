@@ -4,6 +4,7 @@ import datetime
 import xml.etree.ElementTree as ET
 import pytz
 import copy
+import uuid
 from xci import models
 
 # Medbiq namespaces and types used
@@ -111,6 +112,7 @@ def parseMedBiqPerfXML(xmlbit):
     obj['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
     obj['linked_content'] = getReferences(xmlbit)
     obj['components'] = getComponents(xmlbit)
+    obj['uuidurl'] = str(uuid.uuid4())
     models.savePerformanceFramework(obj)
     return obj
 

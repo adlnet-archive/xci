@@ -78,7 +78,7 @@ class SettingsForm(Form):
     name = TextField('Name', validators=[DataRequired()])
     username = TextField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
-    default = BooleanField('Default')
+    default = BooleanField('Default', default=False)
 
 class SearchForm(Form):
     search = TextField('Search', validators=[DataRequired()])
