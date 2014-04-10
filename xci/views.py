@@ -2,10 +2,11 @@ import base64
 import json
 import models
 import requests
+import os
 from xci import app, competency, performance
 from xci.competency import MBCompetency as mbc
 from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -227,7 +228,13 @@ def me():
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
-    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
+    badges = []
+    for perf in user_comps:
+        for p in perf['performances']:
+            badges.append(p['badgeassertionuri'])
+    badges = json.dumps(badges)
+
+    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'], badges=badges)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
@@ -443,6 +450,7 @@ def compsearch():
 def check_badges():
     uri = request.form.get('uri', None)
     p = performance.evaluate(uri, current_user.id)
+    models.createAssertion(p, uri)
     return Response(json.dumps(p), mimetype='application/json')
     # return render_template('check_badges.html')
 
@@ -456,7 +464,7 @@ def tetris_badge(perfwk_id, component_id, perf_id):
     if not b_fwk:
         abort(404)
     
-    b_class = models.getBadgeClass(component_id, perf_id)
+    b_class = models.getBadgeClass(perfwk_id, perf_id)
     if not b_class:
         abort(404)
     return b_class 
@@ -467,13 +475,15 @@ def tetris_badge_pic(perfwk_id, component_id, perf_id):
     if not b_fwk:
         abort(404)
     
-    b_class = models.getBadgeClass(component_id, perf_id)
+    b_class = models.getBadgeClass(perfwk_id, perf_id)
     if not b_class:
         abort(404)
-    return url_for('static', filename='spacecat.png')
+
+    # Hack...images should be saved with uuidurl plus perf_id or something like that
+    return send_file(os.path.join(os.path.dirname(__file__),'static/%s.png' % perf_id), mimetype='image/png')
 
 
-@app.route('/tetris/assertions/<ass_id>')
+@app.route('/assertions/<ass_id>')
 def tetris_assertion(ass_id):
     ass = models.getBadgeAssertion(ass_id)
     if not ass:

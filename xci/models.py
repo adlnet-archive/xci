@@ -1,6 +1,8 @@
 import re
 import datetime
 import pytz
+import badgebakery
+import os
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
@@ -17,12 +19,17 @@ def insertAssertion(ba):
     _id = db.badgeassertion.insert(ba)
     db.badgeassertion.update({'_id':_id}, {'uid':_id})
 
-def getBadgeClass(c_id, p_id):
-    badge = db.badgeclass.find_one({'name': '%s-%s' % (c_id, p_id)})
+def getBadgeClass(perf_id, p_id, json_resp=True):
+    badge = db.badgeclass.find_one({'uuidurl': perf_id,'name': p_id})
     if not badge:
         return None
     del badge['_id']
-    return jsonify(badge)
+    del badge['uuidurl']
+    
+    if json_resp:
+        return jsonify(badge)
+    else:
+        return badge
 
 def getBadgeAssertion(ass_id):
     ass = db.badgeassertion.find_one({'_id': ObjectId(ass_id)})
@@ -30,6 +37,32 @@ def getBadgeAssertion(ass_id):
         return None
     del ass['_id']
     return jsonify(ass)
+
+def createAssertion(userprof, uri):
+    uuidurl = userprof['perfwks'][str(hash(uri))]['uuidurl']
+    for k, v in userprof['competencies'].items():
+        for perf in v['performances']:
+            if 'badgeassertionuri' not in perf:    
+                badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-6]
+                badgeassertion = {
+                 'recipient':{
+                     'type': 'email',
+                     'hashed': False,
+                     'identity': userprof['email']
+                     },
+                 'issuedOn': datetime.datetime.now(pytz.utc).isoformat(),
+                 'badge': badge_uri,
+                 'verify':{
+                     'type': 'hosted',
+                     'url': 'URL OF LRS/STATEMENTS GOES HERE'
+                     }
+                }
+                _id = db.badgeassertion.insert(badgeassertion)
+                perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
+                baked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'] + userprof['first_name'])
+                badgebakery.bake_badge(unbaked, baked, perf['badgeassertionuri'])
+    updateUserProfile(userprof, userprof['username'])
 
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
@@ -240,11 +273,12 @@ def savePerformanceFramework(json_fwk):
         for c in json_fwk['components']:
             for p in c['performancelevels']:
                 badgeclass = {
-                    "name": '%s-%s' % (c['id'],p['id']),
+                    "name": p['id'],
                     "description": p['description'],
                     "image": '%s/badgeclass/%s/%s/%s/badge' % (current_app.config['DOMAIN_NAME'], json_fwk['uuidurl'], c['id'], p['id']),
                     "criteria": json_fwk['uri'] + '.xml',
-                    "issuer": '%s/badgeclass/issuer' % current_app.config['DOMAIN_NAME']
+                    "issuer": '%s/badgeclass/issuer' % current_app.config['DOMAIN_NAME'],
+                    'uuidurl': json_fwk['uuidurl']
                 }
                 db.badgeclass.insert(badgeclass)
 
