@@ -3,6 +3,7 @@ import datetime
 import pytz
 import badgebakery
 import os
+import base64
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
@@ -59,10 +60,20 @@ def createAssertion(userprof, uri):
                 }
                 _id = db.badgeassertion.insert(badgeassertion)
                 perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
-                unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
-                baked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'] + userprof['first_name'])
-                badgebakery.bake_badge(unbaked, baked, perf['badgeassertionuri'])
-    updateUserProfile(userprof, userprof['username'])
+                updateUserProfile(userprof, userprof['username'])
+                
+                # # Create the baked badge - for later use
+                # unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
+                # name_encoding = base64.b64encode('%s-%s' % (perf['levelid'], userprof['email']))
+                # baked_filename = '%s_%s' % (uuidurl, name_encoding)
+                # baked = os.path.join(os.path.dirname(__file__), 'static/baked/%s.png' % baked_filename)
+                # badgebakery.bake_badge(unbaked, baked, perf['badgeassertionuri'])
+    
+                # # Once baked image is created, store in mongo
+                # storeBakedBadges()
+
+
+
 
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo

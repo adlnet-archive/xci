@@ -97,9 +97,9 @@
 	var LR_SERVER = "http://72.243.185.28/";
 	var resultPages = 0;
 	var resultCurrentPage = 0;
-	var comps = JSON.parse("{{ comps }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n/g, ""));
-	var compfwks = JSON.parse("{{ compfwks }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/, ">").replace(/\n/g, ""));
-	var perfwks = JSON.parse("{{ perfwks }}".replace(/u&#34;|&#34;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/, ">").replace(/\n/g, ""));
+	var comps = {{ comps|safe }}
+	var compfwks = {{ compfwks|safe }}
+	var perfwks = {{ perfwks|safe }}
 
 	// Handle tabs
 	$('#myTab a').click(function(e){

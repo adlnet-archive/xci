@@ -230,8 +230,9 @@ def me():
 
     badges = []
     for perf in user_comps:
-        for p in perf['performances']:
-            badges.append(p['badgeassertionuri'])
+        if 'performances' in perf:
+            for p in perf['performances']:
+                badges.append(p['badgeassertionuri'])
     badges = json.dumps(badges)
 
     return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'], badges=badges)
@@ -344,10 +345,9 @@ def lr_search():
     for p in perfwks:
         p['_id'] = str(p['_id'])
 
-    # Need to escape double quote so can pass to JS
-    jcomps = json.dumps(comps).replace('"', '\\"')
-    jcfwks = json.dumps(compfwks).replace('"', '\\"')
-    jpfwks = json.dumps(perfwks).replace('"', '\\"')
+    jcomps = json.dumps(comps)
+    jcfwks = json.dumps(compfwks)
+    jpfwks = json.dumps(perfwks)
 
     return render_template('lrsearch.html', search_form=SearchForm(), comps=jcomps,
         compfwks=jcfwks, perfwks=jpfwks)
