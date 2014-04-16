@@ -12,6 +12,7 @@
     </div>
 </div>
 <div class="row"><div class="col-xs-12"><hr></div></div>
+{% if 'admin' in current_user.roles %}
 <p>
 Click links to add competencies..
 <br><a href="./?uri=http://adlnet.gov/competency-framework/scorm/choosing-an-lms">choose lms</a>
@@ -19,6 +20,7 @@ Click links to add competencies..
 <br><a href="./?uri=http://12.109.40.34/performance-framework/xapi/tetris">perf tetris</a>
 <br><a href="./cc">common core</a>
 </p>
+{% endif %}
 <div class="col-xs-12">
 {% for c in comps %}
 	<div class="panel panel-default">

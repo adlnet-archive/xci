@@ -3,6 +3,7 @@ import json
 import models
 import requests
 import os
+import gridfs
 from xci import app, competency, performance
 from xci.competency import MBCompetency as mbc
 from functools import wraps
@@ -12,6 +13,8 @@ from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
+from werkzeug import secure_filename
+from urlparse import urlparse
 
 # Init login_manager
 login_manager = LoginManager()
@@ -20,9 +23,37 @@ login_manager.init_app(app)
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+fs = gridfs.GridFS(db)
 
 # lr uri to obtain docs
 LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
+
+app.config['UPLOAD_FOLDER'] = 'static/badgeclass'
+app.config['ALLOWED_EXTENSIONS'] = set(['png'])
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/badge_upload', methods=['POST'])
+def badge_upload():
+    import pdb
+    pdb.set_trace()
+    badge = request.files['badge']
+    url = request.form['imageurl']
+
+    if badge and allowed_file(badge.filename):
+        filename = secure_filename(badge.filename)
+        parts = urlparse(url)
+        path_parts = parts.path.split('/')
+
+        # Make sure the image name is the one we're expecting
+        if filename == path_parts[5]:
+            grid_name = ':'.join(path_parts[3:6])
+            saved = fs.put(badge, filename=grid_name)
+
+        return redirect(url_for('uploaded_file'), filename=filename)
+
+
 
 # Checks if the user has admin privileges
 def check_admin(func):
@@ -454,11 +485,11 @@ def check_badges():
     return Response(json.dumps(p), mimetype='application/json')
     # return render_template('check_badges.html')
 
-@app.route('/badgeclass/issuer')
+@app.route('/static/badgeclass/issuer')
 def tetris_issuer():
     return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
 
-@app.route('/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
+@app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
 def tetris_badge(perfwk_id, component_id, perf_id):
     b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
     if not b_fwk:
@@ -467,10 +498,15 @@ def tetris_badge(perfwk_id, component_id, perf_id):
     b_class = models.getBadgeClass(perfwk_id, perf_id)
     if not b_class:
         abort(404)
-    return b_class 
 
-@app.route('/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
+    if '.png' in perf_id:
+        pass
+    else:
+        return b_class 
+
+@app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
 def tetris_badge_pic(perfwk_id, component_id, perf_id):
+    # THIS WOULD GRAB FILE FROM GRIDFS SOMEHOW
     b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
     if not b_fwk:
         abort(404)
@@ -480,7 +516,7 @@ def tetris_badge_pic(perfwk_id, component_id, perf_id):
         abort(404)
 
     # Hack...images should be saved with uuidurl plus perf_id or something like that
-    return send_file(os.path.join(os.path.dirname(__file__),'static/%s.png' % perf_id), mimetype='image/png')
+    return send_file(os.path.join(app.config['ALLOWED_EXTENSIONS'], perfwk_id, component_id, '%s.png' % perf_id), mimetype='image/png')
 
 
 @app.route('/assertions/<ass_id>')

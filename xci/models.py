@@ -44,7 +44,7 @@ def createAssertion(userprof, uri):
     for k, v in userprof['competencies'].items():
         for perf in v['performances']:
             if 'badgeassertionuri' not in perf:    
-                badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-6]
+                badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-4]
                 badgeassertion = {
                  'recipient':{
                      'type': 'email',
@@ -280,19 +280,22 @@ def savePerformanceFramework(json_fwk):
     else:
         db.perfwk.insert(json_fwk, manipulate=False)
 
-        # Create badgeclasses
+        # Create badgeclasses when created the perfwk
         for c in json_fwk['components']:
             for p in c['performancelevels']:
                 badgeclass = {
                     "name": p['id'],
                     "description": p['description'],
-                    "image": '%s/badgeclass/%s/%s/%s/badge' % (current_app.config['DOMAIN_NAME'], json_fwk['uuidurl'], c['id'], p['id']),
+                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
                     "criteria": json_fwk['uri'] + '.xml',
-                    "issuer": '%s/badgeclass/issuer' % current_app.config['DOMAIN_NAME'],
+                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER']),
                     'uuidurl': json_fwk['uuidurl']
                 }
                 db.badgeclass.insert(badgeclass)
+                p['badgeclassimage'] = badgeclass['image']
 
+        # Update the perfwk wiht the badgeclassimage fields
+        updatePerformanceFramework(json_fwk)
 
 # Update actual per fwk
 def updatePerformanceFramework(json_fwk):
