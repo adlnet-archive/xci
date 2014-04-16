@@ -39,6 +39,20 @@ def getBadgeAssertion(ass_id):
     del ass['_id']
     return jsonify(ass)
 
+def getAllBadgeAssertions(name):
+
+    asses = {'assertions':[]}
+    count = 0
+    prof = getUserProfile(name)
+    for k,v in prof['competencies'].items():
+        for p in v['performances']:
+            if 'badgeassertionuri' in p.keys():
+                asses['assertions'].append(p['badgeassertionuri'])
+                count += 1
+    asses['count'] = count
+
+    return jsonify(asses)
+
 def createAssertion(userprof, uri):
     uuidurl = userprof['perfwks'][str(hash(uri))]['uuidurl']
     for k, v in userprof['competencies'].items():

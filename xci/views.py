@@ -498,8 +498,9 @@ def tetris_badge(perfwk_id, component_id, perf_id):
     # Probably a better way of doing this - serve png
     if '.png' in perf_id:
         filename = ':'.join([perfwk_id, component_id, perf_id])
-        badge = fs.get_last_version(filename)
-        if not badge:
+        try:
+            badge = fs.get_last_version(filename)
+        except Exception, e:
             abort(404)
 
         badge_file = fs.get(badge._file['_id'])
@@ -518,19 +519,10 @@ def tetris_badge(perfwk_id, component_id, perf_id):
 
         return b_class 
 
-# @app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
-# def tetris_badge_pic(perfwk_id, component_id, perf_id):
-#     # THIS WOULD GRAB FILE FROM GRIDFS SOMEHOW
-#     b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
-#     if not b_fwk:
-#         abort(404)
-    
-#     b_class = models.getBadgeClass(perfwk_id, perf_id)
-#     if not b_class:
-#         abort(404)
-
-#     # Hack...images should be saved with uuidurl plus perf_id or something like that
-#     return send_file(os.path.join(app.config['ALLOWED_EXTENSIONS'], perfwk_id, component_id, '%s.png' % perf_id), mimetype='image/png')
+@app.route('/view_assertions')
+def view_assertions():
+    name = current_user.id
+    return models.getAllBadgeAssertions(name)
 
 
 @app.route('/assertions/<ass_id>')
