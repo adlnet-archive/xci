@@ -30,6 +30,12 @@ class User(UserMixin):
         except Exception, e:
             raise e
 
+def getFullAgent(userprofile):
+    return {
+        "mbox" : "mailto:%s" % userprofile['email'],
+        "name" : "%s %s" % (userprofile['first_name'], userprofile['last_name'])
+    }
+
 # Return one userprofile based on id
 def getUserProfile(userid):
     return db.userprofiles.find_one({'username':userid})

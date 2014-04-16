@@ -22,7 +22,7 @@ class PerfEval(object):
     def _config(self):
         self.fwkobj = models.getPerformanceFramework(self.uri)
         self.userobj = models.getUserProfile(self.username)
-        self.actor = urllib.quote_plus('{"mbox": "mailto:%s"}' % self.userobj['email'])
+        self.actor = '{"mbox": "mailto:%s"}' % self.userobj['email']
         # tetris doesn't use expapi
         self.verb = 'http://adlnet.gov/xapi/verbs/completed'
         self.query_string = '?agent={0}&verb={1}&activity={2}&related_activities={3}'
@@ -44,7 +44,7 @@ class PerfEval(object):
     def _requestStatments(self, objuri):
         stmts = []
         for prof in self.profiles:
-            query = self.query_string.format(self.actor, self.verb, objuri, 'true')
+            query = self.query_string.format(urllib.quote_plus(self.actor), self.verb, objuri, 'true')
             url = prof['endpoint'] + "statements" + query
             print url
             get_resp = requests.get(url, headers=current_app.config['HEADERS'], verify=False)
@@ -115,7 +115,39 @@ class TetrisPerformanceEval(PerfEval):
                 p['levelscore'] = plvl['score']['singlevalue']
                 p['score'] =  lvlmax
                 perfs.append(p)
+                # obj : {id : http://12.109.40.34/competency/xapi/tetris/time#minutes_6} 
+                self.sendAchievedBadge(compuri, plvl, comp)
         return self.saveUserTetrisCompPerformances(compuri, perfs)
+
+    def sendAchievedBadge(self, compuri, plvl, comp):
+        verb = "http://adlnet.gov/expapi/verbs/achieved"
+        # there should only be one default profile
+        prof = self.getDefaultUserProfile()
+        url = prof['endpoint'] + "statements"
+        data = {
+            'actor': models.getFullAgent(self.userobj),
+            'verb': {'id': 'http://adlnet.gov/expapi/verbs/achieved', 'display':{'en-US': 'achieved'}},
+            'object':{'id':"%s#%s" % (compuri, plvl['id']), 
+                      'definition':{
+                            'name':{"en-US":"%s - %s" % (comp['title'], plvl['score']['singlevalue'])},
+                            'description':{"en-US":plvl['description']},
+                            'type':self.fwkobj['type']
+                        }},
+            'context':{'contextActivities':{'other':[{'id': self.uri}]}}
+        }
+        import pprint
+        pprint.pprint(data)
+        post_resp = requests.post(url, data=json.dumps(data), 
+            headers=current_app.config['HEADERS'], verify=False)
+        
+        if post_resp.status_code != 200:
+            print "got an error from performance.getStatements: %s" % post_resp.content
+
+    def getDefaultUserProfile(self):
+        if len(self.profiles) > 1:
+            prof = [p for p in self.profiles if p.get('default', False)]
+            return prof[0]
+        return self.profiles[0]
 
     def getCompURIFromPFWK(self, comp):
         for c in comp['competencies']:
