@@ -15,6 +15,8 @@ from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 from werkzeug import secure_filename
 from urlparse import urlparse
+from itertools import imap
+from operator import itemgetter
 
 # Init login_manager
 login_manager = LoginManager()
@@ -36,11 +38,12 @@ def allowed_file(filename):
 
 @app.route('/badge_upload', methods=['POST'])
 def badge_upload():
-    import pdb
-    pdb.set_trace()
+    # Get file and badgeimageurl that was pre-built when perfwk was created
     badge = request.files['badge']
     url = request.form['imageurl']
+    uri = request.form['uri']
 
+    # Make sure the file name is allowed and secure (just png for now)
     if badge and allowed_file(badge.filename):
         filename = secure_filename(badge.filename)
         parts = urlparse(url)
@@ -49,11 +52,12 @@ def badge_upload():
         # Make sure the image name is the one we're expecting
         if filename == path_parts[5]:
             grid_name = ':'.join(path_parts[3:6])
-            saved = fs.put(badge, filename=grid_name)
-
-        return redirect(url_for('uploaded_file'), filename=filename)
-
-
+            saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+        else:
+            abort(403)
+        return redirect(url_for('perfwks', uri=uri))
+    else:
+        abort(403)
 
 # Checks if the user has admin privileges
 def check_admin(func):
@@ -491,32 +495,42 @@ def tetris_issuer():
 
 @app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
 def tetris_badge(perfwk_id, component_id, perf_id):
-    b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
-    if not b_fwk:
-        abort(404)
-    
-    b_class = models.getBadgeClass(perfwk_id, perf_id)
-    if not b_class:
-        abort(404)
-
+    # Probably a better way of doing this - serve png
     if '.png' in perf_id:
-        pass
+        filename = ':'.join([perfwk_id, component_id, perf_id])
+        badge = fs.get_last_version(filename)
+        if not badge:
+            abort(404)
+
+        badge_file = fs.get(badge._file['_id'])
+        response = make_response(badge_file.read())
+        response.mimetype = badge_file.content_type
+        return response
+    # Serve metadata if not png
     else:
+        b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
+        if not b_fwk:
+            abort(404)
+        
+        b_class = models.getBadgeClass(perfwk_id, perf_id)
+        if not b_class:
+            abort(404)
+
         return b_class 
 
-@app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
-def tetris_badge_pic(perfwk_id, component_id, perf_id):
-    # THIS WOULD GRAB FILE FROM GRIDFS SOMEHOW
-    b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
-    if not b_fwk:
-        abort(404)
+# @app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>/badge')
+# def tetris_badge_pic(perfwk_id, component_id, perf_id):
+#     # THIS WOULD GRAB FILE FROM GRIDFS SOMEHOW
+#     b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
+#     if not b_fwk:
+#         abort(404)
     
-    b_class = models.getBadgeClass(perfwk_id, perf_id)
-    if not b_class:
-        abort(404)
+#     b_class = models.getBadgeClass(perfwk_id, perf_id)
+#     if not b_class:
+#         abort(404)
 
-    # Hack...images should be saved with uuidurl plus perf_id or something like that
-    return send_file(os.path.join(app.config['ALLOWED_EXTENSIONS'], perfwk_id, component_id, '%s.png' % perf_id), mimetype='image/png')
+#     # Hack...images should be saved with uuidurl plus perf_id or something like that
+#     return send_file(os.path.join(app.config['ALLOWED_EXTENSIONS'], perfwk_id, component_id, '%s.png' % perf_id), mimetype='image/png')
 
 
 @app.route('/assertions/<ass_id>')

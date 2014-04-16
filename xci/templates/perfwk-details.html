@@ -85,8 +85,9 @@
                         <dl class="dl-horizontal">
                             <dt>Badge Image</dt>
                             <dd>
-                                <form method="POST" enctype="multipart/form-data" action="{{ url_for('badge_upload') }}?next={{ request.path }}" class="form-horizontal">
+                                <form method="POST" enctype="multipart/form-data" action="{{ url_for('badge_upload') }}" class="form-horizontal">
                                     <input type="hidden" name="imageurl" value="{{ pl.badgeclassimage|safe }}">
+                                    <input type="hidden" name="uri" value="{{ fwk.uri }}">
                                     <input type="file" name="badge"><br/>
                                     <input type="submit" value="Upload">
                                 </form>
