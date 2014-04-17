@@ -44,17 +44,14 @@ def badge_upload():
     uri = request.form['uri']
 
     # Make sure the file name is allowed and secure (just png for now)
-    if badge and allowed_file(badge.filename):
-        filename = secure_filename(badge.filename)
+    if badge and allowed_file(secure_filename(badge.filename)):
         parts = urlparse(url)
         path_parts = parts.path.split('/')
 
-        # Make sure the image name is the one we're expecting
-        if filename == path_parts[5]:
-            grid_name = ':'.join(path_parts[3:6])
-            saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
-        else:
-            abort(403)
+        badge.filename = path_parts[5]
+        grid_name = ':'.join(path_parts[3:6])
+        saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+        
         return redirect(url_for('perfwks', uri=uri))
     else:
         abort(403)
