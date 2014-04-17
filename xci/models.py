@@ -69,7 +69,7 @@ def createAssertion(userprof, uri):
                  'badge': badge_uri,
                  'verify':{
                      'type': 'hosted',
-                     'url': 'URL OF LRS/STATEMENTS GOES HERE'
+                     'url': perf['statementurl']
                      }
                 }
                 _id = db.badgeassertion.insert(badgeassertion)
