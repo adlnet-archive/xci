@@ -42,7 +42,7 @@
         {% if comp.met %}
             <div class="panel panel-success">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{ comp.uri }}">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -58,7 +58,7 @@
         {% else %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{ comp.uri }}">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -87,7 +87,7 @@
         <div class="panel panel-default">
         {% endif %}
             <div class="panel-heading">
-                <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}&userview=true">{{ cfwk.title }}</a></h3>
+                <h3 class="panel-title"><a href="{{ url_for('me_frameworks') }}?uri={{cfwk.uri}}">{{ cfwk.title }}</a></h3>
             </div>
             <div class="panel-body">
                 <p>{{ cfwk.description }}</p>
@@ -115,7 +115,7 @@
         <div class="panel panel-default">
         {% endif %}
             <div class="panel-heading">
-                <h3 class="panel-title"><a href="{{ url_for('perfwks') }}?uri={{pfwk.uri}}&userview=true">{{ pfwk.title }}</a></h3>
+                <h3 class="panel-title"><a href="{{ url_for('me_perfwks') }}?uri={{pfwk.uri}}">{{ pfwk.title }}</a></h3>
             </div>
             <div class="panel-body">
                 <p>{{ pfwk.description }}</p>

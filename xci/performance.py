@@ -47,12 +47,16 @@ class PerfEval(object):
             query = self.query_string.format(urllib.quote_plus(self.actor), self.verb, objuri, 'true')
             url = prof['endpoint'] + "statements" + query
             print url
-            get_resp = requests.get(url, headers=current_app.config['HEADERS'], verify=False)
-            
-            if get_resp.status_code != 200:
-                print "got an error from performance.getStatements: %s" % get_resp.content
+            try:
+                get_resp = requests.get(url, headers=current_app.config['HEADERS'], verify=False)
+            except Exception, e:
+                print "got an error while trying to retrieve statements in performance.getStatements: %s" % e.message
                 return []
-
+            else:
+                if get_resp.status_code != 200:
+                    print "got an error from performance.getStatements: %s" % get_resp.content
+                    return []
+            
             stmts.extend(json.loads(get_resp.content)['statements'])
         return stmts
 
@@ -89,7 +93,8 @@ class TetrisPerformanceEval(PerfEval):
         if times:
             val = self.update(times, 'comp_times')
 
-        del val['_id']
+        if val and '_id' in val.keys():
+            del val['_id']
         return val
 
     def getComponent(self, compid):

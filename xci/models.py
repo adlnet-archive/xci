@@ -115,6 +115,18 @@ def getFullAgent(userprofile):
 def getUserProfile(userid):
     return db.userprofiles.find_one({'username':userid})
 
+def getPerfwkFromUserProfile(prof, uri):
+    return prof['perfwks'][str(hash(uri))]
+
+def getCompfwkFromUserProfile(prof, uri):
+    return prof['compfwks'][str(hash(uri))]
+
+def getCompFromUserProfile(prof, uri):
+    return prof['competencies'][str(hash(uri))]
+
+def GetAllCompsFromUserProfile(prof):
+    return prof['competencies']
+
 # Update or insert user profile if id is given
 def saveUserProfile(profile, userid=None):
     if userid:

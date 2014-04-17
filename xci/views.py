@@ -147,14 +147,18 @@ def competencies():
     # Look for comp args, if none display all comps
     d = {}
     uri = request.args.get('uri', None)
-    uview = request.args.get('userview', False)
     mb = request.args.get('mb', False)
+    
     if uri:      
+        if current_user.is_authenticated():
+            username = current_user.id
+            user = models.getUserProfile(username)            
+            d['registered'] = str(hash(uri)) in user['competencies'].keys()
+
         d['uri'] = uri
         comp = models.getCompetency(uri, objectid=True)
         d['cid'] = comp.pop('_id')
         d['comp'] = comp
-        d['userview'] = uview
         # If medbiq comp display xml if so since it's the original and not lossy internal one
         if mb:
             if not comp.get('edited', False) and competency.isMB(comp):
@@ -167,23 +171,58 @@ def competencies():
             return Response(thexml, mimetype='application/xml')
         else:
             compuri = d['uri']
-            if 'adlnet' in d['uri']:
-                compuri = compuri[:7] + 'www.' + compuri[7:]
-            url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
-            resp = requests.get(url)
-            ids = []
-            if resp.status_code == 200:
-                lrresults = json.loads(resp.content)
-                ids = [s['doc_ID'] for s in lrresults['documents']]
-                for d_id in ids:
-                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
-                updated_comp = models.getCompetency(uri, objectid=True)
-                d['comp'] = updated_comp
+            # if 'adlnet' in d['uri']:
+            #     compuri = compuri[:7] + 'www.' + compuri[7:]
+            # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+            # resp = requests.get(url)
+            # ids = []
+            # if resp.status_code == 200:
+            #     lrresults = json.loads(resp.content)
+            #     ids = [s['doc_ID'] for s in lrresults['documents']]
+            #     for d_id in ids:
+            #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+            #     updated_comp = models.getCompetency(uri, objectid=True)
+            #     d['comp'] = updated_comp
 
             return render_template('comp-details.html', **d)
 
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)
+
+@app.route('/me_competencies')
+@login_required
+def me_competencies():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    d = {}
+    uri = request.args.get('uri', None)
+
+    if uri:      
+        d['uri'] = uri
+        comp = models.getCompFromUserProfile(user, uri)
+        # d['cid'] = comp.pop('_id')
+        d['comp'] = comp
+
+        # compuri = d['uri']
+        # if 'adlnet' in d['uri']:
+        #     compuri = compuri[:7] + 'www.' + compuri[7:]
+        # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+        # resp = requests.get(url)
+        # ids = []
+        # if resp.status_code == 200:
+        #     lrresults = json.loads(resp.content)
+        #     ids = [s['doc_ID'] for s in lrresults['documents']]
+        #     for d_id in ids:
+        #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+        #     updated_comp = models.getCompFromUserProfile(user, uri)
+        #     d['comp'] = updated_comp
+
+        return render_template('me_comp-details.html', **d)
+
+    d['comps'] = models.GetAllCompsFromUserProfile(user)
+    return render_template('me_competencies.html', **d)
+
 
 # Return competency frameworks
 @app.route('/frameworks', methods=["GET", "POST"])
@@ -191,12 +230,15 @@ def frameworks():
     if request.method == 'GET':
         # Determine if requesting specific fwk or not
         uri = request.args.get('uri', None)
-        uview = request.args.get('userview', False)
         if uri:
             d = {}
+            if current_user.is_authenticated():
+                username = current_user.id
+                user = models.getUserProfile(username)            
+                d['registered'] = str(hash(uri)) in user['compfwks'].keys()
+
             d['uri'] = uri
             d['fwk'] = models.getCompetencyFramework(uri)
-            d['userview'] = uview
             return render_template('compfwk-details.html', **d)
 
         return_dict = {'frameworks_form': FrameworksForm()}
@@ -213,6 +255,22 @@ def frameworks():
     return_dict['cfwks'] = models.findCompetencyFrameworks()
     return render_template('frameworks.html', **return_dict)
 
+# Return competency frameworks
+@app.route('/me_frameworks', methods=["GET"])
+@login_required
+def me_frameworks():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    uri = request.args.get('uri', None)
+    if uri:
+        d = {}
+        d['uri'] = uri
+        d['fwk'] = models.getCompfwkFromUserProfile(user, uri)
+        return render_template('me_compfwk-details.html', **d)
+    else:
+        abort(404)
+
 # Return performance frameworks
 @app.route('/perfwks', methods=["GET", "POST"])
 def perfwks():
@@ -220,12 +278,15 @@ def perfwks():
     if request.method == 'GET':
         # Determine if asking for specific fwk or not
         uri = request.args.get('uri', None)
-        uview = request.args.get('userview', False)
         if uri:
             d = {}
+            if current_user.is_authenticated():
+                username = current_user.id
+                user = models.getUserProfile(username)            
+                d['registered'] = str(hash(uri)) in user['perfwks'].keys()
+
             d['uri'] = uri
             d['fwk'] = models.getPerformanceFramework(uri)
-            d['userview'] = uview
             return render_template('perfwk-details.html', **d)
         d['frameworks_form'] = FrameworksForm()
     else:
@@ -240,6 +301,22 @@ def perfwks():
 
     d['pfwks'] = models.findPerformanceFrameworks()
     return render_template('performancefwks.html', **d)
+
+# Return performance frameworks
+@app.route('/me_perfwks', methods=["GET"])
+@login_required
+def me_perfwks():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    uri = request.args.get('uri', None)
+    if uri:
+        d = {}
+        d['uri'] = uri
+        d['fwk'] = models.getPerfwkFromUserProfile(user, uri)
+        return render_template('me_perfwk-details.html', **d)
+    else:
+        abort(404)
 
 # Return all data pertaining to user
 @app.route('/me', methods=["GET"])
@@ -313,9 +390,9 @@ def update_endpoint():
     for profile in user['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
-            profile['username'] = sf['username']
+            profile['username'] = sf['auth']
             profile['password'] = sf['password']
-            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['username'], profile['password']))
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['auth'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -510,8 +587,11 @@ def view_assertions():
     name = current_user.id
 
     p = performance.evaluate(uri, name)
-    models.createAssertion(p, uri)
-    return models.getAllBadgeAssertions(name)
+    if p:
+        models.createAssertion(p, uri)
+    # return models.getAllBadgeAssertions(name)
+    return redirect(url_for('me_perfwks', uri=uri))
+
 
 @app.route('/assertions/<ass_id>')
 def tetris_assertion(ass_id):

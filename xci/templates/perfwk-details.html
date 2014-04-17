@@ -2,19 +2,19 @@
 {% block content %}
 <div class="page-header">
     <h1>{{ fwk.title }}
-    {% if current_user.is_authenticated() and not userview %}
+    {% if current_user.is_authenticated() and not registered %}
         <small>
             <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
             <input type="hidden" name="perfwk_uri" value="{{ fwk.uri }}">
             <button type="submit" class="btn btn-default">Register</button>
             </form>
         </small>
-    {% elif current_user.is_authenticated() and userview %}
+    {% elif current_user.is_authenticated() %}
         {% if fwk.uri == 'http://12.109.40.34/performance-framework/xapi/tetris' %}
         <br/>
         <form class="form-inline" role="form" action="{{ url_for('view_assertions') }}" method="post">
             <input type="hidden" name="uri" value="{{fwk.uri}}">
-            <button type="submit" class="btn btn-primary">View Assertions</button>
+            <button type="submit" class="btn btn-primary">View Badge Assertions</button>
         </form>
         {% endif %}        
         {% if fwk.completed %}
@@ -80,7 +80,7 @@
                             <dt>score</dt>
                             <dd>{{ pl.score.singlevalue }}</dd>
                         </dl>
-                        {% if 'admin' in current_user.roles and not userview%}
+                        {% if 'admin' in current_user.roles %}
                         <dl class="dl-horizontal">
                             <dt>Badge Image</dt>
                             <dd>

@@ -2,17 +2,15 @@
 {% block content %}
 <div class="page-header">
     <h1>{{ comp.title }}
-    {% if current_user.is_authenticated() and not userview %}
+    {% if current_user.is_authenticated() and not registered %}
         <small>
             <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
             <input type="hidden" name="comp_uri" value="{{ comp.uri }}">
             <button type="submit" class="btn btn-default">Register</button>
             </form>
         </small>
-    {% elif userview and comp.completed %}
-        <small><span class="label label-success">completed</span></small>
-    {% endif %}
     </h1>
+    {% endif %}
 </div>
 <p>
     {% if 'admin' in current_user.roles %}
