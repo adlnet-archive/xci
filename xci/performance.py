@@ -114,9 +114,11 @@ class TetrisPerformanceEval(PerfEval):
                 p['leveldescription'] = plvl['description']
                 p['levelscore'] = plvl['score']['singlevalue']
                 p['score'] =  lvlmax
-                perfs.append(p)
                 # obj : {id : http://12.109.40.34/competency/xapi/tetris/time#minutes_6} 
-                self.sendAchievedBadge(compuri, plvl, comp)
+                stmturl = self.sendAchievedBadge(compuri, plvl, comp)
+                if stmturl:
+                    p['statementurl'] = stmturl
+                perfs.append(p)
         return self.saveUserTetrisCompPerformances(compuri, perfs)
 
     def sendAchievedBadge(self, compuri, plvl, comp):
@@ -135,13 +137,13 @@ class TetrisPerformanceEval(PerfEval):
                         }},
             'context':{'contextActivities':{'other':[{'id': self.uri}]}}
         }
-        import pprint
-        pprint.pprint(data)
         post_resp = requests.post(url, data=json.dumps(data), 
             headers=current_app.config['HEADERS'], verify=False)
         
         if post_resp.status_code != 200:
             print "got an error from performance.getStatements: %s" % post_resp.content
+            return
+        return "%s?%s" % (url, urllib.urlencode({"statementId":json.loads(post_resp.content)[0]}))
 
     def getDefaultUserProfile(self):
         if len(self.profiles) > 1:
