@@ -93,11 +93,7 @@ def index():
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
 
-    badges = [x for x in db.badgeclass.find()]
-    for b in badges:
-        b['_id'] = str(b['_id'])
-
-    return render_template('home.html', badges=badges)
+    return render_template('home.html')
     
 # Logout user
 @app.route('/logout')
@@ -481,14 +477,6 @@ def compsearch():
             comps = models.searchComps(key)
         return render_template('compsearch.html', comps=comps, search_form=sf)        
 
-@app.route('/check_badges', methods=['POST'])
-def check_badges():
-    uri = request.form.get('uri', None)
-    p = performance.evaluate(uri, current_user.id)
-    models.createAssertion(p, uri)
-    return Response(json.dumps(p), mimetype='application/json')
-    # return render_template('check_badges.html')
-
 @app.route('/static/badgeclass/issuer')
 def tetris_issuer():
     return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
@@ -519,11 +507,14 @@ def tetris_badge(perfwk_id, component_id, perf_id):
 
         return b_class 
 
-@app.route('/view_assertions')
+@app.route('/view_assertions', methods=['POST'])
 def view_assertions():
+    uri = request.form.get('uri', None)
     name = current_user.id
-    return models.getAllBadgeAssertions(name)
 
+    p = performance.evaluate(uri, name)
+    models.createAssertion(p, uri)
+    return models.getAllBadgeAssertions(name)
 
 @app.route('/assertions/<ass_id>')
 def tetris_assertion(ass_id):

@@ -12,11 +12,10 @@
     {% elif current_user.is_authenticated() and userview %}
         {% if fwk.uri == 'http://12.109.40.34/performance-framework/xapi/tetris' %}
         <br/>
-        <form class="form-inline" role="form" action="{{ url_for('check_badges') }}" method="post">
+        <form class="form-inline" role="form" action="{{ url_for('view_assertions') }}" method="post">
             <input type="hidden" name="uri" value="{{fwk.uri}}">
-            <button type="submit" class="btn btn-primary">Check for Badges</button>
+            <button type="submit" class="btn btn-primary">View Assertions</button>
         </form>
-        <a href="{{ url_for('view_assertions') }}" class="btn btn-primary" role="button">View Earned Badges</a>
         {% endif %}        
         {% if fwk.completed %}
         <small><span class="label label-success">completed</span></small>
