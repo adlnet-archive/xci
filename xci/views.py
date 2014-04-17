@@ -42,6 +42,7 @@ def badge_upload():
     badge = request.files['badge']
     url = request.form['imageurl']
     uri = request.form['uri']
+    componentid = request.form['componentid']
 
     # Make sure the file name is allowed and secure (just png for now)
     if badge and allowed_file(secure_filename(badge.filename)):
@@ -49,9 +50,17 @@ def badge_upload():
         path_parts = parts.path.split('/')
 
         badge.filename = path_parts[5]
+        perflvl_id = os.path.splitext(path_parts[5])[0]
         grid_name = ':'.join(path_parts[3:6])
         saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
-        
+        perfwkobj = models.getPerformanceFramework(uri)
+        for c in perfwkobj.get('components', []):
+            if c['id'] == componentid:
+                for pl in c['performancelevels']:
+                    if pl['id'] == perflvl_id:
+                        pl['badgeuploaded'] = True
+                        break
+        models.updatePerformanceFramework(perfwkobj)
         return redirect(url_for('perfwks', uri=uri))
     else:
         abort(403)
