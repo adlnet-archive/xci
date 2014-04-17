@@ -84,12 +84,17 @@
                         <dl class="dl-horizontal">
                             <dt>Badge Image</dt>
                             <dd>
+                                {% if not pl.badgeuploaded %}
                                 <form method="POST" enctype="multipart/form-data" action="{{ url_for('badge_upload') }}" class="form-horizontal">
                                     <input type="hidden" name="imageurl" value="{{ pl.badgeclassimage|safe }}">
+                                    <input type="hidden" name="componentid" value="{{ c.id }}">
                                     <input type="hidden" name="uri" value="{{ fwk.uri }}">
                                     <input type="file" name="badge"><br/>
                                     <input type="submit" value="Upload">
                                 </form>
+                                {% else %}
+                                <image src="{{pl.badgeclassimage|safe}}"/>
+                                {% endif %}
                             </dd>
                         </dl>
                         {% endif %}
