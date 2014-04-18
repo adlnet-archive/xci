@@ -3,6 +3,7 @@
 <div class="page-header">
     <h1>Competency Frameworks</h1>
 </div>
+{% if 'admin' in current_user.roles %}
 <form class="form-horizontal" role="form" method="post">
     {{ frameworks_form.hidden_tag() }}
     {% for field, errors in frameworks_form.errors.iteritems() %}
@@ -20,6 +21,7 @@
         <div class="col-sm-offset-2 col-sm-10"> <button type="submit" class="btn btn-default">Submit</button></div>
     </div>
 </form>
+{% endif %}
 <br>
 <br>
 <p>Below are the frameworks already added to the system.</p>
@@ -27,7 +29,7 @@
 <div class="col-xs-12">
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}">{{ cfwk.title }}</a></h3>
+            <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}">{{ cfwk.title }}</a></h3>            
         </div>
         <div class="panel-body">
             <p>{{ cfwk.description|safe }}</p>

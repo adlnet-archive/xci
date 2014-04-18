@@ -3,6 +3,7 @@
 <div class="page-header">
     <h1>Performance Frameworks</h1>
 </div>
+{% if 'admin' in current_user.roles %}
 <form class="form-horizontal" role="form" method="post">
     {{ frameworks_form.hidden_tag() }}
     {% for field, errors in frameworks_form.errors.iteritems() %}
@@ -20,6 +21,7 @@
         <div class="col-sm-offset-2 col-sm-10"> <button type="submit" class="btn btn-default">Submit</button></div>
     </div>
 </form>
+{% endif %}
 <p>Below are the performance frameworks already added to the system.</p>
 {% for pfwk in pfwks %}
 <div class="col-xs-12">
@@ -29,7 +31,8 @@
         </div>
         <div class="panel-body">
             <p>{{ pfwk.description|safe }}</p>
-			<ul>
+			
+            <ul>
 			{% for lr in pfwk.lr_data %}
 			<li><a href="{{ lr }}">LR Metadata</a></li>
 			{% else %}

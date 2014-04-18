@@ -1,15 +1,22 @@
+import base64
 import json
 import models
 import requests
-from xci import app, competency
+import os
+import gridfs
+from xci import app, competency, performance
 from xci.competency import MBCompetency as mbc
 from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
+from werkzeug import secure_filename
+from urlparse import urlparse
+from itertools import imap
+from operator import itemgetter
 
 # Init login_manager
 login_manager = LoginManager()
@@ -18,9 +25,45 @@ login_manager.init_app(app)
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+fs = gridfs.GridFS(db)
 
 # lr uri to obtain docs
 LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
+
+app.config['UPLOAD_FOLDER'] = 'static/badgeclass'
+app.config['ALLOWED_EXTENSIONS'] = set(['png'])
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/badge_upload', methods=['POST'])
+def badge_upload():
+    # Get file and badgeimageurl that was pre-built when perfwk was created
+    badge = request.files['badge']
+    url = request.form['imageurl']
+    uri = request.form['uri']
+    componentid = request.form['componentid']
+
+    # Make sure the file name is allowed and secure (just png for now)
+    if badge and allowed_file(secure_filename(badge.filename)):
+        parts = urlparse(url)
+        path_parts = parts.path.split('/')
+
+        badge.filename = path_parts[5]
+        perflvl_id = os.path.splitext(path_parts[5])[0]
+        grid_name = ':'.join(path_parts[3:6])
+        saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+        perfwkobj = models.getPerformanceFramework(uri)
+        for c in perfwkobj.get('components', []):
+            if c['id'] == componentid:
+                for pl in c['performancelevels']:
+                    if pl['id'] == perflvl_id:
+                        pl['badgeuploaded'] = True
+                        break
+        models.updatePerformanceFramework(perfwkobj)
+        return redirect(url_for('perfwks', uri=uri))
+    else:
+        abort(403)
 
 # Checks if the user has admin privileges
 def check_admin(func):
@@ -55,6 +98,7 @@ def index():
             return redirect(url_for("competencies"))
         except Exception as e:
             return make_response("%s<br>%s" % (str(e), p), 200)
+
     return render_template('home.html')
     
 # Logout user
@@ -112,14 +156,18 @@ def competencies():
     # Look for comp args, if none display all comps
     d = {}
     uri = request.args.get('uri', None)
-    uview = request.args.get('userview', False)
     mb = request.args.get('mb', False)
+    
     if uri:      
+        if current_user.is_authenticated():
+            username = current_user.id
+            user = models.getUserProfile(username)            
+            d['registered'] = str(hash(uri)) in user['competencies'].keys()
+
         d['uri'] = uri
         comp = models.getCompetency(uri, objectid=True)
         d['cid'] = comp.pop('_id')
         d['comp'] = comp
-        d['userview'] = uview
         # If medbiq comp display xml if so since it's the original and not lossy internal one
         if mb:
             if not comp.get('edited', False) and competency.isMB(comp):
@@ -132,23 +180,58 @@ def competencies():
             return Response(thexml, mimetype='application/xml')
         else:
             compuri = d['uri']
-            if 'adlnet' in d['uri']:
-                compuri = compuri[:7] + 'www.' + compuri[7:]
-            url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
-            resp = requests.get(url)
-            ids = []
-            if resp.status_code == 200:
-                lrresults = json.loads(resp.content)
-                ids = [s['doc_ID'] for s in lrresults['documents']]
-                for d_id in ids:
-                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
-                updated_comp = models.getCompetency(uri, objectid=True)
-                d['comp'] = updated_comp
+            # if 'adlnet' in d['uri']:
+            #     compuri = compuri[:7] + 'www.' + compuri[7:]
+            # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+            # resp = requests.get(url)
+            # ids = []
+            # if resp.status_code == 200:
+            #     lrresults = json.loads(resp.content)
+            #     ids = [s['doc_ID'] for s in lrresults['documents']]
+            #     for d_id in ids:
+            #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+            #     updated_comp = models.getCompetency(uri, objectid=True)
+            #     d['comp'] = updated_comp
 
             return render_template('comp-details.html', **d)
 
     d['comps'] = models.findCompetencies()
     return render_template('competencies.html', **d)
+
+@app.route('/me_competencies')
+@login_required
+def me_competencies():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    d = {}
+    uri = request.args.get('uri', None)
+
+    if uri:      
+        d['uri'] = uri
+        comp = models.getCompFromUserProfile(user, uri)
+        # d['cid'] = comp.pop('_id')
+        d['comp'] = comp
+
+        # compuri = d['uri']
+        # if 'adlnet' in d['uri']:
+        #     compuri = compuri[:7] + 'www.' + compuri[7:]
+        # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+        # resp = requests.get(url)
+        # ids = []
+        # if resp.status_code == 200:
+        #     lrresults = json.loads(resp.content)
+        #     ids = [s['doc_ID'] for s in lrresults['documents']]
+        #     for d_id in ids:
+        #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+        #     updated_comp = models.getCompFromUserProfile(user, uri)
+        #     d['comp'] = updated_comp
+
+        return render_template('me_comp-details.html', **d)
+
+    d['comps'] = models.GetAllCompsFromUserProfile(user)
+    return render_template('me_competencies.html', **d)
+
 
 # Return competency frameworks
 @app.route('/frameworks', methods=["GET", "POST"])
@@ -156,12 +239,15 @@ def frameworks():
     if request.method == 'GET':
         # Determine if requesting specific fwk or not
         uri = request.args.get('uri', None)
-        uview = request.args.get('userview', False)
         if uri:
             d = {}
+            if current_user.is_authenticated():
+                username = current_user.id
+                user = models.getUserProfile(username)            
+                d['registered'] = str(hash(uri)) in user['compfwks'].keys()
+
             d['uri'] = uri
             d['fwk'] = models.getCompetencyFramework(uri)
-            d['userview'] = uview
             return render_template('compfwk-details.html', **d)
 
         return_dict = {'frameworks_form': FrameworksForm()}
@@ -178,6 +264,22 @@ def frameworks():
     return_dict['cfwks'] = models.findCompetencyFrameworks()
     return render_template('frameworks.html', **return_dict)
 
+# Return competency frameworks
+@app.route('/me_frameworks', methods=["GET"])
+@login_required
+def me_frameworks():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    uri = request.args.get('uri', None)
+    if uri:
+        d = {}
+        d['uri'] = uri
+        d['fwk'] = models.getCompfwkFromUserProfile(user, uri)
+        return render_template('me_compfwk-details.html', **d)
+    else:
+        abort(404)
+
 # Return performance frameworks
 @app.route('/perfwks', methods=["GET", "POST"])
 def perfwks():
@@ -185,12 +287,15 @@ def perfwks():
     if request.method == 'GET':
         # Determine if asking for specific fwk or not
         uri = request.args.get('uri', None)
-        uview = request.args.get('userview', False)
         if uri:
             d = {}
+            if current_user.is_authenticated():
+                username = current_user.id
+                user = models.getUserProfile(username)            
+                d['registered'] = str(hash(uri)) in user['perfwks'].keys()
+
             d['uri'] = uri
             d['fwk'] = models.getPerformanceFramework(uri)
-            d['userview'] = uview
             return render_template('perfwk-details.html', **d)
         d['frameworks_form'] = FrameworksForm()
     else:
@@ -205,6 +310,22 @@ def perfwks():
 
     d['pfwks'] = models.findPerformanceFrameworks()
     return render_template('performancefwks.html', **d)
+
+# Return performance frameworks
+@app.route('/me_perfwks', methods=["GET"])
+@login_required
+def me_perfwks():
+    username = current_user.id
+    user = models.getUserProfile(username)
+
+    uri = request.args.get('uri', None)
+    if uri:
+        d = {}
+        d['uri'] = uri
+        d['fwk'] = models.getPerfwkFromUserProfile(user, uri)
+        return render_template('me_perfwk-details.html', **d)
+    else:
+        abort(404)
 
 # Return all data pertaining to user
 @app.route('/me', methods=["GET"])
@@ -221,7 +342,14 @@ def me():
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
-    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'])
+    badges = []
+    for perf in user_comps:
+        if 'performances' in perf:
+            for p in perf['performances']:
+                badges.append(p['badgeassertionuri'])
+    badges = json.dumps(badges)
+
+    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'], badges=badges)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
@@ -271,8 +399,9 @@ def update_endpoint():
     for profile in user['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
-            profile['auth'] = sf['auth']
-            profile['password'] = generate_password_hash(sf['password'])
+            profile['username'] = sf['auth']
+            profile['password'] = sf['password']
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['auth'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -299,8 +428,9 @@ def add_endpoint():
 
         new_prof['name'] = af['newname']
         new_prof['endpoint'] = af['newendpoint']
-        new_prof['auth'] = af['newauth']
-        new_prof['password'] = generate_password_hash(af['newpassword'])
+        new_prof['username'] = af['newusername']
+        new_prof['password'] = af['newpassword']
+        new_prof['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (new_prof['username'], new_prof['password']))
         new_prof['default'] = default
 
         if default:
@@ -329,10 +459,9 @@ def lr_search():
     for p in perfwks:
         p['_id'] = str(p['_id'])
 
-    # Need to escape double quote so can pass to JS
-    jcomps = json.dumps(comps).replace('"', '\\"')
-    jcfwks = json.dumps(compfwks).replace('"', '\\"')
-    jpfwks = json.dumps(perfwks).replace('"', '\\"')
+    jcomps = json.dumps(comps)
+    jcfwks = json.dumps(compfwks)
+    jpfwks = json.dumps(perfwks)
 
     return render_template('lrsearch.html', search_form=SearchForm(), comps=jcomps,
         compfwks=jcfwks, perfwks=jpfwks)
@@ -430,3 +559,66 @@ def compsearch():
             key = sf.search.data
             comps = models.searchComps(key)
         return render_template('compsearch.html', comps=comps, search_form=sf)        
+
+@app.route('/static/badgeclass/issuer')
+def tetris_issuer():
+    return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
+
+@app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
+def tetris_badge(perfwk_id, component_id, perf_id):
+    # Probably a better way of doing this - serve png
+    if '.png' in perf_id:
+        filename = ':'.join([perfwk_id, component_id, perf_id])
+        try:
+            badge = fs.get_last_version(filename)
+        except Exception, e:
+            abort(404)
+
+        badge_file = fs.get(badge._file['_id'])
+        response = make_response(badge_file.read())
+        response.mimetype = badge_file.content_type
+        return response
+    # Serve metadata if not png
+    else:
+        b_fwk = models.findPerformanceFrameworks({'uuidurl': perfwk_id})
+        if not b_fwk:
+            abort(404)
+        
+        b_class = models.getBadgeClass(perfwk_id, perf_id)
+        if not b_class:
+            abort(404)
+
+        return b_class 
+
+@app.route('/view_assertions', methods=['POST'])
+def view_assertions():
+    uri = request.form.get('uri', None)
+    name = current_user.id
+
+    p = performance.evaluate(uri, name)
+    if p:
+        models.createAssertion(p, uri)
+    # return models.getAllBadgeAssertions(name)
+    return redirect(url_for('me_perfwks', uri=uri))
+
+
+@app.route('/assertions/<ass_id>')
+def tetris_assertion(ass_id):
+    ass = models.getBadgeAssertion(ass_id)
+    if not ass:
+        abort(404)
+    return ass
+
+@app.route('/test')
+def test():
+    uri = "http://12.109.40.34/performance-framework/xapi/tetris"
+    userid = "tom"
+    # seed system with perfwk
+    # objid = models.getPerformanceFramework(uri)
+    competency.parseComp(uri)
+    # reg user with perfwk
+    models.addPerFwkToUserProfile(uri, userid)
+
+    #### now do the performance stuff
+    p = performance.evaluate(uri, userid)
+    return Response(json.dumps(p), mimetype='application/json')

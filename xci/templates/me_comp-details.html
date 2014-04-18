@@ -2,22 +2,11 @@
 {% block content %}
 <div class="page-header">
     <h1>{{ comp.title }}
-    {% if current_user.is_authenticated() and not registered %}
-        <small>
-            <form class="form-inline" role="form" action="{{ url_for('add_comp') }}" method="post" >
-            <input type="hidden" name="comp_uri" value="{{ comp.uri }}">
-            <button type="submit" class="btn btn-default">Register</button>
-            </form>
-        </small>
     </h1>
-    {% endif %}
 </div>
 <p>
-    {% if 'admin' in current_user.roles %}
-        <a href="{{ url_for('edit_comp', objid=cid) }}">Edit</a>
-        {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
-             |  <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
-        {% endif %}
+    {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
+         <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
     {% endif %}
 </p>
 <div class="col-xs-12">

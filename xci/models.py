@@ -1,13 +1,94 @@
 import re
 import datetime
 import pytz
+import badgebakery
+import os
+import base64
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
+from flask import jsonify, current_app
 
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+
+def getBadgeIdByName(name):
+    return str(db.badgeclass.find_one({'name': name})['_id'])
+
+def insertAssertion(ba):
+    _id = db.badgeassertion.insert(ba)
+    db.badgeassertion.update({'_id':_id}, {'uid':_id})
+
+def getBadgeClass(perf_id, p_id, json_resp=True):
+    badge = db.badgeclass.find_one({'uuidurl': perf_id,'name': p_id})
+    if not badge:
+        return None
+    del badge['_id']
+    del badge['uuidurl']
+    
+    if json_resp:
+        return jsonify(badge)
+    else:
+        return badge
+
+def getBadgeAssertion(ass_id):
+    ass = db.badgeassertion.find_one({'_id': ObjectId(ass_id)})
+    if not ass:
+        return None
+    del ass['_id']
+    return jsonify(ass)
+
+def getAllBadgeAssertions(name):
+
+    asses = {'assertions':[]}
+    count = 0
+    prof = getUserProfile(name)
+    for k,v in prof['competencies'].items():
+        for p in v['performances']:
+            if 'badgeassertionuri' in p.keys():
+                asses['assertions'].append(p['badgeassertionuri'])
+                count += 1
+    asses['count'] = count
+
+    return jsonify(asses)
+
+def createAssertion(userprof, uri):
+    uuidurl = userprof['perfwks'][str(hash(uri))]['uuidurl']
+    for k, v in userprof['competencies'].items():
+        for perf in v['performances']:
+            if 'badgeassertionuri' not in perf:    
+                badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-4]
+                badgeassertion = {
+                 'recipient':{
+                     'type': 'email',
+                     'hashed': False,
+                     'identity': userprof['email']
+                     },
+                 'issuedOn': datetime.datetime.now(pytz.utc).isoformat(),
+                 'badge': badge_uri,
+                 'verify':{
+                     'type': 'hosted',
+                     'url': perf['statementurl']
+                     }
+                }
+                _id = db.badgeassertion.insert(badgeassertion)
+                perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                updateUserProfile(userprof, userprof['username'])
+                
+                # # Create the baked badge - for later use
+                # unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
+                # name_encoding = base64.b64encode('%s-%s' % (perf['levelid'], userprof['email']))
+                # baked_filename = '%s_%s' % (uuidurl, name_encoding)
+                # baked = os.path.join(os.path.dirname(__file__), 'static/baked/%s.png' % baked_filename)
+                # badgebakery.bake_badge(unbaked, baked, perf['badgeassertionuri'])
+    
+                # # Once baked image is created, store in mongo
+                # storeBakedBadges()
+
+
+
+
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
@@ -24,9 +105,27 @@ class User(UserMixin):
         except Exception, e:
             raise e
 
+def getFullAgent(userprofile):
+    return {
+        "mbox" : "mailto:%s" % userprofile['email'],
+        "name" : "%s %s" % (userprofile['first_name'], userprofile['last_name'])
+    }
+
 # Return one userprofile based on id
 def getUserProfile(userid):
     return db.userprofiles.find_one({'username':userid})
+
+def getPerfwkFromUserProfile(prof, uri):
+    return prof['perfwks'][str(hash(uri))]
+
+def getCompfwkFromUserProfile(prof, uri):
+    return prof['compfwks'][str(hash(uri))]
+
+def getCompFromUserProfile(prof, uri):
+    return prof['competencies'][str(hash(uri))]
+
+def GetAllCompsFromUserProfile(prof):
+    return prof['competencies']
 
 # Update or insert user profile if id is given
 def saveUserProfile(profile, userid=None):
@@ -74,7 +173,7 @@ def addPerFwkToUserProfile(uri, userid):
         fwk = getPerformanceFramework(uri)
         userprof['perfwks'][fh] = fwk
         # find the competency object uri for each component and add it to the user's list of competencies
-        for curi in (x['entry'] for b in fwk['components'] for x in b['competencies'] if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+        for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
             addCompToUserProfile(curi, userid, userprof)
         saveUserProfile(userprof, userid)
 
@@ -212,6 +311,23 @@ def savePerformanceFramework(json_fwk):
         updatePerformanceFramework(json_fwk)
     else:
         db.perfwk.insert(json_fwk, manipulate=False)
+
+        # Create badgeclasses when created the perfwk
+        for c in json_fwk['components']:
+            for p in c['performancelevels']:
+                badgeclass = {
+                    "name": p['id'],
+                    "description": p['description'],
+                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
+                    "criteria": json_fwk['uri'] + '.xml',
+                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER']),
+                    'uuidurl': json_fwk['uuidurl']
+                }
+                db.badgeclass.insert(badgeclass)
+                p['badgeclassimage'] = badgeclass['image']
+
+        # Update the perfwk wiht the badgeclassimage fields
+        updatePerformanceFramework(json_fwk)
 
 # Update actual per fwk
 def updatePerformanceFramework(json_fwk):

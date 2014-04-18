@@ -29,6 +29,11 @@
             <small><label for="inprogress" class="col-xs-1 control-label"><span class="badge">{{ started }}</span></label><span id="inprogress"> competencies in progress</span></small>
         </div>
     </div>
+    <div class="row">
+        <div class="col-xs-12">
+             <a href="#" class="btn btn-primary" role="button" onClick="pushBadges();">Push Badges</a>
+        </div>
+    </div>    
 </div>
 <div class="row">
     <h4>Competencies</h4>
@@ -37,7 +42,7 @@
         {% if comp.met %}
             <div class="panel panel-success">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{ comp.uri }}">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -53,7 +58,7 @@
         {% else %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{ comp.uri }}&userview=true">{{ comp.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{ comp.uri }}">{{ comp.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
@@ -82,7 +87,7 @@
         <div class="panel panel-default">
         {% endif %}
             <div class="panel-heading">
-                <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{cfwk.uri}}&userview=true">{{ cfwk.title }}</a></h3>
+                <h3 class="panel-title"><a href="{{ url_for('me_frameworks') }}?uri={{cfwk.uri}}">{{ cfwk.title }}</a></h3>
             </div>
             <div class="panel-body">
                 <p>{{ cfwk.description }}</p>
@@ -110,7 +115,7 @@
         <div class="panel panel-default">
         {% endif %}
             <div class="panel-heading">
-                <h3 class="panel-title"><a href="{{ url_for('perfwks') }}?uri={{pfwk.uri}}&userview=true">{{ pfwk.title }}</a></h3>
+                <h3 class="panel-title"><a href="{{ url_for('me_perfwks') }}?uri={{pfwk.uri}}">{{ pfwk.title }}</a></h3>
             </div>
             <div class="panel-body">
                 <p>{{ pfwk.description }}</p>
@@ -128,4 +133,16 @@
     <div class="col-xs-12">You have not registered for any performance frameworks</div>
     {% endfor %}
 </div>
+{% endblock %}
+{% block js %}
+<script src="https://backpack.openbadges.org/issuer.js"></script>
+<script type="text/javascript">
+    function pushBadges(){
+        var badges = {{ badges|safe }}
+        OpenBadges.issue(badges, function(errors, successes){
+            alert(errors)
+            alert(successes)
+        });
+    }
+</script>
 {% endblock %}
