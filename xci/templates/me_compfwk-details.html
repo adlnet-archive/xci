@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ fwk.title }}
+    </h1>
+</div>
+<div class="col-xs-12">
+    <dl class="dl-horizontal">
+        <dt>uri</dt>
+        <dd>{{ fwk.uri }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>description</dt>
+        <dd>{{ fwk.description|safe }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>levels</dt>
+        <dd>{{ fwk.levels }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>type</dt>
+        <dd>{{ fwk.type }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>last modified</dt>
+        <dd>{{ fwk.lastmodified }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>ids</dt>
+        <dd>{{ fwk.ids }}</dd>
+    </dl>
+    <dl class="dl-horizontal">
+        <dt>relations</dt>
+        <dd>{{ fwk.relations }}</dd>
+    </dl>
+</div>
+{% for c in fwk.competencies %}
+<div class="col-xs-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{c.uri}}">{{ c.title }}</a></h3>
+        </div>
+        <div class="panel-body">
+            <p>{{ c.description|safe }}</p>
+            <ul>
+            {% for lr in c.lr_data %}
+            <li><a href="{{ lr }}">LR Metadata</a></li>
+            {% else %}
+            There are no known linked LR resources
+            {% endfor %}
+            </ul>            
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

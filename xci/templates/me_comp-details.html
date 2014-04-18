@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ comp.title }}
+    </h1>
+</div>
+<p>
+    {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
+         <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
+    {% endif %}
+</p>
+<div class="col-xs-12">
+<dl class="dl-horizontal">
+    <dt>uri</dt>
+    <dd>{{ comp.uri }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>description</dt>
+    <dd>{{ comp.description|safe }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>levels</dt>
+    <dd>{{ comp.levels }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>type</dt>
+    <dd>{{ comp.type }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>last modified</dt>
+    <dd>{{ comp.lastmodified }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>ids</dt>
+    <dd>{{ comp.ids }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>relations</dt>
+    <dd>{{ comp.relations }}</dd>
+</dl>
+<dl class="dl-horizontal">
+    <dt>Linked LR data</dt>
+    <dd>
+        <ul>
+        {% for lr in comp.lr_data %}
+        <li><a href="{{ lr }}">LR Metadata</a></li>
+        {% else %}
+        There are no known linked LR resources
+        {% endfor %}
+        </ul>
+    </dd>
+</dl>
+</div>
+{% endblock %}
