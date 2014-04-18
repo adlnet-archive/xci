@@ -33,7 +33,21 @@
         <div class="col-xs-12">
              <a href="#" class="btn btn-primary" role="button" onClick="pushBadges();">Push Badges</a>
         </div>
-    </div>    
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col-xs-12">
+             {% for ma in mozilla_asserts %}
+             <small><b>{{ ma.title }} Badges</b></small><br/>
+                 {% for b in ma.badges %}
+                 <image src="{{b|safe}}" height="75px" width="75px"/>
+                 {% endfor %}
+                 <br />
+             {% else %}
+             <small>You have no badges to display!</small>
+             {% endfor %}
+        </div>
+    </div>     
 </div>
 <div class="row">
     <h4>Competencies</h4>
@@ -46,6 +60,9 @@
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
+                    {% if comp.performances %}
+                    <p style="color:red">Click the competency link to view your assertions!</p>
+                    {% endif %}
                     <ul>
                     {% for lr in comp.lr_data %}
                     <li><a href="{{ lr }}">LR Metadata</a></li>
@@ -62,6 +79,9 @@
                 </div>
                 <div class="panel-body">
                     <p>{{ comp.description }}</p>
+                    {% if comp.performances %}
+                    <p style="color:red">Click the competency link to view your assertions!</p>
+                    {% endif %}                    
                     <ul>
                     {% for lr in comp.lr_data %}
                     <li><a href="{{ lr }}">LR Metadata</a></li>
@@ -138,7 +158,7 @@
 <script src="https://backpack.openbadges.org/issuer.js"></script>
 <script type="text/javascript">
     function pushBadges(){
-        var badges = {{ badges|safe }}
+        var badges = {{mozilla_asserts|tojson|safe }}
         OpenBadges.issue(badges, function(errors, successes){
             alert(errors)
             alert(successes)

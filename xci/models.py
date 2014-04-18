@@ -40,7 +40,6 @@ def getBadgeAssertion(ass_id):
     return jsonify(ass)
 
 def getAllBadgeAssertions(name):
-
     asses = {'assertions':[]}
     count = 0
     prof = getUserProfile(name)
@@ -74,6 +73,7 @@ def createAssertion(userprof, uri):
                 }
                 _id = db.badgeassertion.insert(badgeassertion)
                 perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                perf['badgeclassimageurl'] = badgeassertion['badge'] + ".png"
                 updateUserProfile(userprof, userprof['username'])
                 
                 # # Create the baked badge - for later use

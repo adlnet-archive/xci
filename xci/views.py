@@ -342,14 +342,36 @@ def me():
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
-    badges = []
+    # whole_badges = []
+    # for up in user_pfwks:
+    #     up_dict = {}
+    #     up_dict['badges'] = []
+    #     up_dict['title'] = up['title']
+    #     if 'components' in up:
+    #         for c in up['components']:
+    #             if 'performancelevels' in c:
+    #                 for pl in c['performancelevels']:
+    #                     if 'badgeclassimage' in pl:
+    #                         up_dict['badges'].append(pl['badgeclassimage'])
+    #     whole_badges.append(up_dict)
+    
+    # badges = json.dumps(badges)
+    mozilla_asserts = []
     for perf in user_comps:
+        moz_dict = {}
+        moz_dict['asserts'] = []
+        moz_dict['badges'] = []
+        moz_dict['title'] = perf['title']
         if 'performances' in perf:
             for p in perf['performances']:
-                badges.append(p['badgeassertionuri'])
-    badges = json.dumps(badges)
+                if 'badgeassertionuri' in p:
+                    moz_dict['asserts'].append(p['badgeassertionuri'])
+                if 'badgeclassimageurl' in p:
+                    moz_dict['badges'].append(p['badgeclassimageurl'])
+        mozilla_asserts.append(moz_dict)
 
-    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name, email=user['email'], badges=badges)
+    return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name,
+        email=user['email'], mozilla_asserts=mozilla_asserts)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
