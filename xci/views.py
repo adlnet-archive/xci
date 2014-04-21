@@ -180,18 +180,18 @@ def competencies():
             return Response(thexml, mimetype='application/xml')
         else:
             compuri = d['uri']
-            # if 'adlnet' in d['uri']:
-            #     compuri = compuri[:7] + 'www.' + compuri[7:]
-            # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
-            # resp = requests.get(url)
-            # ids = []
-            # if resp.status_code == 200:
-            #     lrresults = json.loads(resp.content)
-            #     ids = [s['doc_ID'] for s in lrresults['documents']]
-            #     for d_id in ids:
-            #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
-            #     updated_comp = models.getCompetency(uri, objectid=True)
-            #     d['comp'] = updated_comp
+            if 'adlnet' in d['uri']:
+                compuri = compuri[:7] + 'www.' + compuri[7:]
+            url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+            resp = requests.get(url)
+            ids = []
+            if resp.status_code == 200:
+                lrresults = json.loads(resp.content)
+                ids = [s['doc_ID'] for s in lrresults['documents']]
+                for d_id in ids:
+                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+                updated_comp = models.getCompetency(uri, objectid=True)
+                d['comp'] = updated_comp
 
             return render_template('comp-details.html', **d)
 
@@ -210,23 +210,7 @@ def me_competencies():
     if uri:      
         d['uri'] = uri
         comp = models.getCompFromUserProfile(user, uri)
-        # d['cid'] = comp.pop('_id')
         d['comp'] = comp
-
-        # compuri = d['uri']
-        # if 'adlnet' in d['uri']:
-        #     compuri = compuri[:7] + 'www.' + compuri[7:]
-        # url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
-        # resp = requests.get(url)
-        # ids = []
-        # if resp.status_code == 200:
-        #     lrresults = json.loads(resp.content)
-        #     ids = [s['doc_ID'] for s in lrresults['documents']]
-        #     for d_id in ids:
-        #         models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
-        #     updated_comp = models.getCompFromUserProfile(user, uri)
-        #     d['comp'] = updated_comp
-
         return render_template('me_comp-details.html', **d)
 
     d['comps'] = models.GetAllCompsFromUserProfile(user)
@@ -247,6 +231,22 @@ def frameworks():
                 d['registered'] = str(hash(uri)) in user['compfwks'].keys()
 
             d['uri'] = uri
+
+            fwk = models.getCompetencyFramework(uri)
+            for c in fwk['competencies']:
+                compuri = c['uri']
+                cid = models.getCompetency(compuri, objectid=True)['_id']
+                if 'adlnet' in compuri:
+                    compuri = compuri[:7] + 'www.' + compuri[7:]
+                    url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+                    resp = requests.get(url)
+                    ids = []
+                    if resp.status_code == 200:
+                        lrresults = json.loads(resp.content)
+                        ids = [s['doc_ID'] for s in lrresults['documents']]
+                        for d_id in ids:
+                            models.updateCompetencyLR(cid, LR_NODE + d_id + '&by_doc_ID=T')
+
             d['fwk'] = models.getCompetencyFramework(uri)
             return render_template('compfwk-details.html', **d)
 
