@@ -39,6 +39,20 @@
     <dd>{{ comp.relations }}</dd>
 </dl>
 <dl class="dl-horizontal">
+    <dt>Assertions</dt>
+    <dd>
+        <ul>
+        {% for p in comp.performances %}
+            {% if 'badgeassertionuri' in p %}
+            <li><a href="{{ p.badgeassertionuri }}">{{ p.levelid }}</a></li>
+            {% endif %}
+        {% else %}
+        You haven't earned any assertions yet!
+        {% endfor %}
+        </ul>
+    </dd>
+</dl>
+<dl class="dl-horizontal">
     <dt>Linked LR data</dt>
     <dd>
         <ul>
