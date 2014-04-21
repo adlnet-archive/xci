@@ -52,16 +52,20 @@ def badge_upload():
         badge.filename = path_parts[5]
         perflvl_id = os.path.splitext(path_parts[5])[0]
         grid_name = ':'.join(path_parts[3:6])
-        saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
-        perfwkobj = models.getPerformanceFramework(uri)
-        for c in perfwkobj.get('components', []):
-            if c['id'] == componentid:
-                for pl in c['performancelevels']:
-                    if pl['id'] == perflvl_id:
-                        pl['badgeuploaded'] = True
-                        break
-        models.updatePerformanceFramework(perfwkobj)
-        return redirect(url_for('perfwks', uri=uri))
+        try:
+            saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+        except Exception, e:
+            return redirect(url_for('perfwks', uri=uri, error=e.message))
+        else:
+            perfwkobj = models.getPerformanceFramework(uri)
+            for c in perfwkobj.get('components', []):
+                if c['id'] == componentid:
+                    for pl in c['performancelevels']:
+                        if pl['id'] == perflvl_id:
+                            pl['badgeuploaded'] = True
+                            break
+            models.updatePerformanceFramework(perfwkobj)
+            return redirect(url_for('perfwks', uri=uri))
     else:
         abort(403)
 
@@ -287,6 +291,7 @@ def perfwks():
     if request.method == 'GET':
         # Determine if asking for specific fwk or not
         uri = request.args.get('uri', None)
+        d['error'] = request.args.get('error', None)
         if uri:
             d = {}
             if current_user.is_authenticated():

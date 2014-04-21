@@ -37,6 +37,9 @@
         <dd>{{ fwk.objectids }}</dd>
     </dl>
 </div>
+{% if error %}
+<div class="alert alert-danger">Something bad happened, try uploading badge image again - {{ error }}</div>
+{% endif %}
 <h2> Components </h2>
 {% for c in fwk.components %}
 <div class="col-xs-12">

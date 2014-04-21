@@ -55,26 +55,27 @@ def getAllBadgeAssertions(name):
 def createAssertion(userprof, uri):
     uuidurl = userprof['perfwks'][str(hash(uri))]['uuidurl']
     for k, v in userprof['competencies'].items():
-        for perf in v['performances']:
-            if 'badgeassertionuri' not in perf:    
-                badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-4]
-                badgeassertion = {
-                 'recipient':{
-                     'type': 'email',
-                     'hashed': False,
-                     'identity': userprof['email']
-                     },
-                 'issuedOn': datetime.datetime.now(pytz.utc).isoformat(),
-                 'badge': badge_uri,
-                 'verify':{
-                     'type': 'hosted',
-                     'url': perf['statementurl']
-                     }
-                }
-                _id = db.badgeassertion.insert(badgeassertion)
-                perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
-                perf['badgeclassimageurl'] = badgeassertion['badge'] + ".png"
-                updateUserProfile(userprof, userprof['username'])
+        if 'performances' in v.keys():
+            for perf in v['performances']:
+                if 'badgeassertionuri' not in perf:    
+                    badge_uri = getBadgeClass(uuidurl, perf['levelid'], False)['image'][:-4]
+                    badgeassertion = {
+                     'recipient':{
+                         'type': 'email',
+                         'hashed': False,
+                         'identity': userprof['email']
+                         },
+                     'issuedOn': datetime.datetime.now(pytz.utc).isoformat(),
+                     'badge': badge_uri,
+                     'verify':{
+                         'type': 'hosted',
+                         'url': perf['statementurl']
+                         }
+                    }
+                    _id = db.badgeassertion.insert(badgeassertion)
+                    perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                    perf['badgeclassimageurl'] = badgeassertion['badge'] + ".png"
+                    updateUserProfile(userprof, userprof['username'])
                 
                 # # Create the baked badge - for later use
                 # unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
@@ -332,6 +333,14 @@ def savePerformanceFramework(json_fwk):
 # Update actual per fwk
 def updatePerformanceFramework(json_fwk):
     val = db.perfwk.update({'uri':json_fwk['uri']}, json_fwk, manipulate=False)
+    pfwk_id = db.perfwk.find_one({'uri':json_fwk['uri']})['_id']
+    updatePerfFwkUserProfile(pfwk_id)    
+
+def updatePerfFwkUserProfile(pfwk_id):
+    fwk = db.perfwk.find_one({'_id': pfwk_id})
+    h = str(hash(fwk['uri']))
+    set_field = 'perfwks.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
 
 # Get one per fwk
 def getPerformanceFramework(uri, objectid=False):
