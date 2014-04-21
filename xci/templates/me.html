@@ -159,9 +159,19 @@
 <script type="text/javascript">
     function pushBadges(){
         var badges = {{mozilla_asserts|tojson|safe }}
-        OpenBadges.issue(badges, function(errors, successes){
-            alert(errors)
-            alert(successes)
+        toSend = [];
+        $.each(badges, function(index,value){
+            $.each(value["asserts"], function(i, v){
+                toSend.push(v);
+            });
+        });
+        OpenBadges.issue(toSend, function(errors, successes){
+            if (errors){
+                alert(errors);
+            }
+            else{
+                alert(successes)
+            }
         });
     }
 </script>
