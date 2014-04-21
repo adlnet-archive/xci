@@ -607,7 +607,7 @@ def view_assertions():
     if p:
         models.createAssertion(p, uri)
     # return models.getAllBadgeAssertions(name)
-    return redirect(url_for('me_perfwks', uri=uri))
+    return redirect(url_for('me'))
 
 
 @app.route('/assertions/<ass_id>')
