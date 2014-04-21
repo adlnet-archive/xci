@@ -38,13 +38,13 @@
     <div class="row">
         <div class="col-xs-12">
              {% for ma in mozilla_asserts %}
+             {% if ma.badges|count > 0 %}
              <small><b>{{ ma.title }} Badges</b></small><br/>
                  {% for b in ma.badges %}
                  <image src="{{b|safe}}" height="75px" width="75px"/>
                  {% endfor %}
                  <br />
-             {% else %}
-             <small>You have no badges to display!</small>
+             {% endif %}
              {% endfor %}
         </div>
     </div>     
