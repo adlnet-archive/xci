@@ -3,5 +3,5 @@ from pymongo import MongoClient
 
 
 # Run the app
-app = config_app('prod')
+app = config_app()
 # app.run(debug=True)
