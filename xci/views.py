@@ -10,7 +10,7 @@ from functools import wraps
 from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
 from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
 from models import User
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 from werkzeug import secure_filename
@@ -575,7 +575,7 @@ def compsearch():
 
 @app.route('/static/badgeclass/issuer')
 def tetris_issuer():
-    return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": "http://adlnet.gov"})
+    return jsonify({"name": "Advanced Distributed Learning (ADL)", "url": current_app.config['DOMAIN_NAME']})
 
 @app.route('/static/badgeclass/<perfwk_id>/<component_id>/<perf_id>')
 def tetris_badge(perfwk_id, component_id, perf_id):
