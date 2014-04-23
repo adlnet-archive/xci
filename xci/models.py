@@ -16,9 +16,9 @@ db = mongo.xci
 def getBadgeIdByName(name):
     return str(db.badgeclass.find_one({'name': name})['_id'])
 
-def insertAssertion(ba):
-    _id = db.badgeassertion.insert(ba)
-    db.badgeassertion.update({'_id':_id}, {'uid':_id})
+def updateAssertion(_id, url):
+    db.badgeassertion.update({'_id':_id}, {'$set':{'uid':str(_id)}})
+    db.badgeassertion.update({'_id':_id}, {'$set':{'verify.url':url}})
 
 def getBadgeClass(perf_id, p_id, json_resp=True):
     badge = db.badgeclass.find_one({'uuidurl': perf_id,'name': p_id})
@@ -36,7 +36,7 @@ def getBadgeAssertion(ass_id):
     ass = db.badgeassertion.find_one({'_id': ObjectId(ass_id)})
     if not ass:
         return None
-    ass['uid'] = str(ass['_id'])
+
     del ass['_id']
     return jsonify(ass)
 
@@ -70,14 +70,17 @@ def createAssertion(userprof, uri):
                      'badge': badge_uri,
                      'verify':{
                          'type': 'hosted',
-                         'url': perf['statementurl']
-                         }
+                         'url': ''
+                         },
+                     'evidence': perf['statementurl']
                     }
                     _id = db.badgeassertion.insert(badgeassertion)
-                    perf['badgeassertionuri'] = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                    assertionuri = current_app.config['DOMAIN_NAME'] + '/assertions/%s' % str(_id)
+                    updateAssertion(_id, assertionuri)
+                    perf['badgeassertionuri'] = assertionuri
                     perf['badgeclassimageurl'] = badgeassertion['badge'] + ".png"
                     updateUserProfile(userprof, userprof['username'])
-                
+
                 # # Create the baked badge - for later use
                 # unbaked = os.path.join(os.path.dirname(__file__), 'static/%s.png' % perf['levelid'])
                 # name_encoding = base64.b64encode('%s-%s' % (perf['levelid'], userprof['email']))
