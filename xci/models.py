@@ -36,6 +36,7 @@ def getBadgeAssertion(ass_id):
     ass = db.badgeassertion.find_one({'_id': ObjectId(ass_id)})
     if not ass:
         return None
+    ass['uid'] = str(ass['_id'])
     del ass['_id']
     return jsonify(ass)
 
