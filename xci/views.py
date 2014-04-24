@@ -235,21 +235,23 @@ def frameworks():
                 d['registered'] = str(hash(uri)) in user['compfwks'].keys()
 
             d['uri'] = uri
-
+            
             fwk = models.getCompetencyFramework(uri)
             for c in fwk['competencies']:
                 compuri = c['uri']
-                cid = models.getCompetency(compuri, objectid=True)['_id']
-                if 'adlnet' in compuri:
-                    compuri = compuri[:7] + 'www.' + compuri[7:]
-                    url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
-                    resp = requests.get(url)
-                    ids = []
-                    if resp.status_code == 200:
-                        lrresults = json.loads(resp.content)
-                        ids = [s['doc_ID'] for s in lrresults['documents']]
-                        for d_id in ids:
-                            models.updateCompetencyLR(cid, LR_NODE + d_id + '&by_doc_ID=T')
+                comp = models.getCompetency(compuri, objectid=True)
+                if comp:
+                    cid = comp['_id']
+                    if 'adlnet' in compuri:
+                        compuri = compuri[:7] + 'www.' + compuri[7:]
+                        url = "https://node01.public.learningregistry.net/slice?any_tags=%s" % compuri
+                        resp = requests.get(url)
+                        ids = []
+                        if resp.status_code == 200:
+                            lrresults = json.loads(resp.content)
+                            ids = [s['doc_ID'] for s in lrresults['documents']]
+                            for d_id in ids:
+                                models.updateCompetencyLR(cid, LR_NODE + d_id + '&by_doc_ID=T')
 
             d['fwk'] = models.getCompetencyFramework(uri)
             return render_template('compfwk-details.html', **d)
