@@ -19,8 +19,6 @@ Setup Mongo (The app uses xci as the name as the database, but you can change th
 	
 	mongo
 	use xci
-	db.addUser("username", "password")
-	db.auth("username", "password")
 
 Install packages (inside of the virtualenv you created first)
 
@@ -32,15 +30,19 @@ Add index
 	mongo xci
 	db.competency.ensureIndex({"title": 1})
 
-Seed the DB with badgeclass data (while in root of project)
-
-	mongoimport --db xci --collection badgeclass --type json --file ./xci/static/badge_classes/tetris_classes.json --jsonArray
-
 Run
 
 	python runserver.py
 
+	If you want run the app using gunicorn with supervisor:
+
+		1. In xci/__init__.py comment in app.wsgi_app = ProxyFix(app.wsgi_app)
+		2. In runserver.py comment out app.run(debug=True)
+		3. Run supervisord
+
+
 	(If you want to run the mongo shell run: mongo xci)
+
 
 Note About Common Core
 	
