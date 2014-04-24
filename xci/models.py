@@ -361,6 +361,11 @@ def dropCompCollections():
     db.drop_collection('competency')
     db.drop_collection('compfwk')
     db.drop_collection('perfwk')
+    for u in db.userprofiles.find():
+        u['competencies'] = {}
+        u['perfwks'] = {}
+        u['compfwks'] = {}
+        updateUserProfile(u, u['username'])
 
 # Drop the database
 def dropAll():
