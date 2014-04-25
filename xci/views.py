@@ -295,7 +295,6 @@ def perfwks():
         uri = request.args.get('uri', None)
         d['error'] = request.args.get('error', None)
         if uri:
-            d = {}
             if current_user.is_authenticated():
                 username = current_user.id
                 user = models.getUserProfile(username)            
@@ -636,7 +635,7 @@ def view_assertions():
     p = performance.evaluate(uri, name)
     if p:
         models.createAssertion(p, uri)
-    # return models.getAllBadgeAssertions(name)
+
     return redirect(url_for('me'))
 
 

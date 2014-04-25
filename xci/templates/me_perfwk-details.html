@@ -1,19 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-    <h1>{{ fwk.title }}
+    <h1>{{ fwk.title }}</h1>
         {% if fwk.uri == 'http://12.109.40.34/performance-framework/xapi/tetris' %}
         <br/>
         <form class="form-inline" role="form" action="{{ url_for('view_assertions') }}" method="post">
             <input type="hidden" name="uri" value="{{fwk.uri}}">
             <button type="submit" class="btn btn-primary">View Badge Assertions</button>
         </form>
-        {% endif %}        
+        {% endif %}      
+        <small>*Note: Make sure to have a default endpoint added to your profile or have a default one enabled in the settings else no assertions will be created!</small>
         {% if fwk.completed %}
         <small><span class="label label-success">completed</span></small>
         {% endif %}
-    </h1>
+    
 </div>
+
 <div class="col-xs-12">
     <dl class="dl-horizontal">
         <dt>description</dt>

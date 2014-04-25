@@ -167,10 +167,10 @@
         });
         OpenBadges.issue(toSend, function(errors, successes){
             if (errors){
-                alert(errors);
+                alert("Something went wrong with pushing the badges to your backpack.");
             }
             else{
-                alert(successes)
+                alert("You have pushed your badges to your backpack successfully!")
             }
         });
     }
