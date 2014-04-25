@@ -344,8 +344,16 @@ def me():
     user_fwks = user['compfwks'].values()
     user_pfwks = user['perfwks'].values()
 
+    import pdb
+    pdb.set_trace()
+
     # Calculate complete competencies for users and return count
-    completed_comps = sum(1 for c in user_comps if c.get('completed',False))
+    # completed_comps = sum(1 for c in user_comps if c.get('completed',False))
+    bs = []
+    for c in user_comps:
+        if c.get('completed',False):
+            bs.append(1)
+    completed_comps = len(bs)
     started_comps = len(user_comps) - completed_comps   
     name = user['first_name'] + ' ' + user['last_name']
 
@@ -377,6 +385,21 @@ def add_comp():
         models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
     elif request.form.get('perfwk_uri', False):
         models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
+
+    return redirect(url_for("me"))
+
+@app.route('/me/update', methods=["POST"])
+@login_required
+def update_comp():
+    if request.form.get('comp_uri', None):
+        # models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
+        pass
+    elif request.form.get('fwk_uri', False):
+        # models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
+        pass
+    elif request.form.get('perfwk_uri', False):
+        # models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
+        pass
 
     return redirect(url_for("me"))
 
