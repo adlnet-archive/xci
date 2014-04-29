@@ -84,6 +84,7 @@ def check_admin(func):
 def load_user(user):
     if isinstance(user, basestring):
         userobj = User(user, 'get')
+        # TODO: can this be changed to just use the id prop on User
         u_id = userobj.get_id()
         return userobj
     else:

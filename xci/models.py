@@ -8,6 +8,7 @@ from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
 from flask import jsonify, current_app
+from werkzeug.security import generate_password_hash
 
 # Init db
 mongo = MongoClient()
@@ -97,51 +98,124 @@ def createAssertion(userprof, uri):
 
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
-    def __init__(self, userid, password):
-        self.id = userid
-        self.password = password
-        self.roles = db.userprofiles.find_one({"username": self.id})['roles']
+    def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
+        self.userprofile = UserProfile(userid, password, email, first_name, last_name, roles)
+        # self.id = userid
+        self.password = self.userprofile.profile['password']
+        self.roles = self.userprofile.profile['roles']
 
+    @property
+    def profile(self):
+        return self.userprofile.profile
+
+    @profile.setter
+    def profile(self, value):
+        self.userprofile.profile = value
+
+    @property
+    def id(self):
+        return self.userprofile.profile['username']
+    
     # Get the userprofile from the db based on id
+    # gotta have this for flask login
     def get_id(self):
-        try:
-            user = db.userprofiles.find_one({"username":self.id})
-            return unicode(self.id)
-        except Exception, e:
-            raise e
+        return self.userprofile.profile['username']
 
-def getFullAgent(userprofile):
-    return {
-        "mbox" : "mailto:%s" % userprofile['email'],
-        "name" : "%s %s" % (userprofile['first_name'], userprofile['last_name'])
-    }
+    @property
+    def last_name(self):
+        return self.userprofile.profile['last_name']
 
-# Return one userprofile based on id
-def getUserProfile(userid):
-    return db.userprofiles.find_one({'username':userid})
+    @last_name.setter
+    def last_name(self, value):
+        self.userprofile.profile['last_name'] = value
+    
+    @property
+    def first_name(self):
+        return self.userprofile.profile['first_name']
 
-def getPerfwkFromUserProfile(prof, uri):
-    return prof['perfwks'][str(hash(uri))]
+    @first_name.setter
+    def first_name(self, value):
+        self.userprofile.profile['first_name'] = value
+    
+    @property
+    def email(self):
+        return self.userprofile.profile['email']
+        
+    @email.setter
+    def email(self, value):
+        self.userprofile.profile['email'] = value
+    
 
-def getCompfwkFromUserProfile(prof, uri):
-    return prof['compfwks'][str(hash(uri))]
+    def save(self):
+        self.userprofile.save()
 
-def getCompFromUserProfile(prof, uri):
-    return prof['competencies'][str(hash(uri))]
+    def getFullAgent(self):
+        return {
+            "mbox" : "mailto:%s" % self.profile['email'],
+            "name" : "%s %s" % (self.profile['first_name'], self.profile['last_name'])
+        }
 
-def GetAllCompsFromUserProfile(prof):
-    return prof['competencies']
+    def getPerfwk(self, uri):
+        return self.userprofile['perfwks'][str(hash(uri))]
 
-# Update or insert user profile if id is given
-def saveUserProfile(profile, userid=None):
-    if userid:
-        updateUserProfile(profile, userid)
-    else:
-        db.userprofiles.insert(profile)
+    def getCompfwk(self, uri):
+        return self.userprofile['compfwks'][str(hash(uri))]
 
-# Perform actual update of profile
-def updateUserProfile(profile, userid):
-    db.userprofiles.update({'username':userid}, profile, manipulate=False)
+    def getComp(self, uri):
+        return self.userprofile['competencies'][str(hash(uri))]
+
+    def getAllComps(self):
+        return self.userprofile['competencies']
+
+class UserProfile():
+    def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
+        self.userid = userid
+        self._profile = db.userprofiles.find_one({'username':userid})
+        # make one if it didn't return a profile
+        if not self._profile:
+            db.userprofiles.insert({'username': userid, 'password':generate_password_hash(password), 
+                                    'email':email, 'first_name':first_name, 'last_name':last_name, 
+                                    'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 
+                                    'roles':roles})
+
+            self._profile = db.userprofiles.find_one({'username':userid})
+
+    @property
+    def profile(self):
+        return self._profile
+
+    @profile.setter
+    def profile(self, value):
+        self._profile = self.save(value)
+
+    # Update or insert user profile if id is given
+    def save(self, profile=None):
+        if profile:
+            self._profile = profile
+        db.userprofiles.update({'username':self.userid}, self._profile, manipulate=False)
+
+# def getPerfwkFromUserProfile(prof, uri):
+#     return prof['perfwks'][str(hash(uri))]
+
+# def getCompfwkFromUserProfile(prof, uri):
+#     return prof['compfwks'][str(hash(uri))]
+
+# def getCompFromUserProfile(prof, uri):
+#     return prof['competencies'][str(hash(uri))]
+
+# def GetAllCompsFromUserProfile(prof):
+#     return prof['competencies']
+
+# # Update or insert user profile if id is given
+# def saveUserProfile(profile, userid=None):
+#     if userid:
+#         updateUserProfile(profile, userid)
+#     else:
+#         db.userprofiles.insert(profile)
+
+# # Perform actual update of profile
+# def updateUserProfile(profile, userid):
+#     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 # Given a URI and Userid, store a copy of the comp in the user profile
 def addCompToUserProfile(uri, userid, userprof=None):
@@ -157,6 +231,10 @@ def addCompToUserProfile(uri, userid, userprof=None):
 
 # Given a URI and Userid, store a copy of the framework and comps in user profile
 def addFwkToUserProfile(uri, userid):
+
+    import pdb
+    pdb.set_trace()
+
     userprof = getUserProfile(userid)
     fh = str(hash(uri))
     if not userprof.get('compfwks', False):
