@@ -140,12 +140,11 @@ class User(UserMixin):
     @property
     def email(self):
         return self.userprofile.profile['email']
-        
+
     @email.setter
     def email(self, value):
         self.userprofile.profile['email'] = value
     
-
     def save(self):
         self.userprofile.save()
 
@@ -155,17 +154,55 @@ class User(UserMixin):
             "name" : "%s %s" % (self.profile['first_name'], self.profile['last_name'])
         }
 
-    def getPerfwk(self, uri):
-        return self.userprofile['perfwks'][str(hash(uri))]
+    def getComp(self, uri):
+        return self.userprofile['competencies'][str(hash(uri))]
 
     def getCompfwk(self, uri):
         return self.userprofile['compfwks'][str(hash(uri))]
 
-    def getComp(self, uri):
-        return self.userprofile['competencies'][str(hash(uri))]
+    def getPerfwk(self, uri):
+        return self.userprofile['perfwks'][str(hash(uri))]
 
     def getAllComps(self):
         return self.userprofile['competencies']
+
+    # Given a URI and Userid, store a copy of the comp in the user profile
+    def addComp(self, uri):
+        h = str(hash(uri))
+        if not self.userprofile.get('competencies', False):
+            self.userprofile['competencies'] = {}
+        if uri and h not in self.userprofile['competencies']:
+            comp = getCompetency(uri)
+            self.userprofile['competencies'][h] = comp
+            self.save()
+
+    def addFwk(self, uri):
+        # we'll need that.. this one's broked
+        # import pdb
+        # pdb.set_trace()
+
+        fh = str(hash(uri))
+        if not self.userprofile.get('compfwks', False):
+            self.userprofile['compfwks'] = {}
+        if uri and fh not in self.userprofile['compfwks']:
+            fwk = getCompetencyFramework(uri)
+            self.userprofile['compfwks'][fh] = fwk
+            for c in fwk['competencies']:
+                self.addComp(c['uri'])
+            self.save()
+
+    def addPerFwk(self, uri):
+        fh = str(hash(uri))
+        if not self.userprofile.get('perfwks', False):
+            self.userprofile['perfwks'] = {}
+        if uri and fh not in self.userprofile['perfwks']:
+            fwk = getPerformanceFramework(uri)
+            self.userprofile['perfwks'][fh] = fwk
+            # find the competency object uri for each component and add it to the user's list of competencies
+            for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+                self.addComp(curi)
+            self.save()
+
 
 class UserProfile():
     def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
@@ -218,47 +255,47 @@ class UserProfile():
 #     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 # Given a URI and Userid, store a copy of the comp in the user profile
-def addCompToUserProfile(uri, userid, userprof=None):
-    if not userprof:
-        userprof = getUserProfile(userid)
-    h = str(hash(uri))
-    if not userprof.get('competencies', False):
-        userprof['competencies'] = {}
-    if uri and h not in userprof['competencies']:
-        comp = getCompetency(uri)
-        userprof['competencies'][h] = comp
-        saveUserProfile(userprof, userid)
+# def addCompToUserProfile(uri, userid, userprof=None):
+#     if not userprof:
+#         userprof = getUserProfile(userid)
+#     h = str(hash(uri))
+#     if not userprof.get('competencies', False):
+#         userprof['competencies'] = {}
+#     if uri and h not in userprof['competencies']:
+#         comp = getCompetency(uri)
+#         userprof['competencies'][h] = comp
+#         saveUserProfile(userprof, userid)
 
 # Given a URI and Userid, store a copy of the framework and comps in user profile
-def addFwkToUserProfile(uri, userid):
+# def addFwkToUserProfile(uri, userid):
 
-    import pdb
-    pdb.set_trace()
+#     import pdb
+#     pdb.set_trace()
 
-    userprof = getUserProfile(userid)
-    fh = str(hash(uri))
-    if not userprof.get('compfwks', False):
-        userprof['compfwks'] = {}
-    if uri and fh not in userprof['compfwks']:
-        fwk = getCompetencyFramework(uri)
-        userprof['compfwks'][fh] = fwk
-        for c in fwk['competencies']:
-            addCompToUserProfile(c['uri'], userid, userprof)
-        saveUserProfile(userprof, userid)
+#     userprof = getUserProfile(userid)
+#     fh = str(hash(uri))
+#     if not userprof.get('compfwks', False):
+#         userprof['compfwks'] = {}
+#     if uri and fh not in userprof['compfwks']:
+#         fwk = getCompetencyFramework(uri)
+#         userprof['compfwks'][fh] = fwk
+#         for c in fwk['competencies']:
+#             addCompToUserProfile(c['uri'], userid, userprof)
+#         saveUserProfile(userprof, userid)
 
 # Given URI and User id, store performance fwk, comp fwk, and comps in user profile
-def addPerFwkToUserProfile(uri, userid):
-    userprof = getUserProfile(userid)
-    fh = str(hash(uri))
-    if not userprof.get('perfwks', False):
-        userprof['perfwks'] = {}
-    if uri and fh not in userprof['perfwks']:
-        fwk = getPerformanceFramework(uri)
-        userprof['perfwks'][fh] = fwk
-        # find the competency object uri for each component and add it to the user's list of competencies
-        for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
-            addCompToUserProfile(curi, userid, userprof)
-        saveUserProfile(userprof, userid)
+# def addPerFwkToUserProfile(uri, userid):
+#     userprof = getUserProfile(userid)
+#     fh = str(hash(uri))
+#     if not userprof.get('perfwks', False):
+#         userprof['perfwks'] = {}
+#     if uri and fh not in userprof['perfwks']:
+#         fwk = getPerformanceFramework(uri)
+#         userprof['perfwks'][fh] = fwk
+#         # find the competency object uri for each component and add it to the user's list of competencies
+#         for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+#             addCompToUserProfile(curi, userid, userprof)
+#         saveUserProfile(userprof, userid)
 
 # Use on search comp page-searches for search keyword in comp titles
 def searchComps(key):
