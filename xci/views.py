@@ -483,11 +483,27 @@ def lr_search():
 def link_lr_comp():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    roles = current_user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
         models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
+
+    try:
+        models.sendLRParadata(lr_uri, lr_title, user_role, "competency", c_uri, c_content)
+    except Exception, e:
+        return "LR metadata updated but paradata was not - " + e.message
+
     return "Successfully linked competency"
 
 # Link lr data to comp fwk
@@ -495,11 +511,27 @@ def link_lr_comp():
 def link_lr_cfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    roles = current_user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
         models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
+
+    try:
+        models.sendLRParadata(lr_uri, lr_title, user_role, "competency framework", c_uri, c_content)
+    except Exception, e:
+        return "LR metadata updated but paradata was not - " + e.message
+
     return "Successfully linked competency framework"
 
 # Linke lr data to per fwk
@@ -507,11 +539,27 @@ def link_lr_cfwk():
 def link_lr_pfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    roles = current_user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
         models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
     except Exception, e:
         return e.message
+
+    try:
+        models.sendLRParadata(lr_uri, lr_title, user_role, "performance framework", c_uri, c_content)
+    except Exception, e:
+        return "LR metadata updated but paradata was not - " + e.message
+
     return "Successfully linked performance framework"
 
 # Admin reset button to clear entire db

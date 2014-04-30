@@ -4,6 +4,9 @@ import pytz
 import badgebakery
 import os
 import base64
+import requests
+from requests.auth import HTTPBasicAuth
+import json
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
@@ -12,6 +15,9 @@ from flask import jsonify, current_app
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+
+class LRException(Exception):
+    pass
 
 def getBadgeIdByName(name):
     return str(db.badgeclass.find_one({'name': name})['_id'])
@@ -233,6 +239,66 @@ def updateCompetencyLR(c_id,lr_uri):
     del comp['_id']
     updateUserComp(comp)
     updateCompInFwks(comp)
+
+def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content): 
+    date = datetime.datetime.now(pytz.utc).isoformat()
+    paradata = {
+        "documents": [
+            {
+                "TOS": {
+                    "submission_TOS": "http://www.learningregistry.org/tos/cc0/v0-5/"
+                },
+                "doc_type": "resource_data",
+                "doc_version": "0.23.0",
+                "resource_data_type": "paradata",
+                "active": True,
+                "identity": {
+                    "owner": "",
+                    "submitter": "ADL",
+                    "submitter_type": "agent",
+                    "signer": "ADL",
+                    "curator": ""
+                },
+                "resource_locator": lr_uri,
+                "payload_placement": "inline",
+                "payload_schema": [
+                    "LR Paradata 1.0"
+                ],
+                "resource_data": {
+                    "activity":{
+                        "actor":{
+                            "description": ["ADL XCI " + user_role, lr_title],
+                            "objectType": user_role
+                        },
+                        "verb":{
+                            "action": "matched",
+                            "date": date,
+                            "context":{
+                                "id":current_app.config['DOMAIN_NAME'],
+                                "description":"ADL's XCI project",
+                                "objectType": "Application"
+                            }
+                        },
+                        "object":{
+                            "id": lr_uri
+                        },
+                        "related":[{
+                            "objectType": c_type,
+                            "id": c_uri,
+                            "content": c_content
+                            }],
+                        "content": "A resource found at "+lr_uri+" was matched to the "+c_type+" with ID "+c_uri+" by an "+user_role+" on "+current_app.config['DOMAIN_NAME']+" system on "+date
+                    }
+                }
+            }
+        ]
+    }
+    r = requests.post("https://node01.public.learningregistry.net/publish", data=json.dumps(paradata), headers={"Content-Type":"application/json"},
+        auth=HTTPBasicAuth(current_app.config['LR_PUBLISH_NAME'], current_app.config['LR_PUBLISH_PASSWORD']), verify=False)
+    print r.content
+    if r.status_code != 200:
+        message = json.loads(r.content)['message']
+        raise LRException(message)
 
 # Update all comp fwks in the user by id
 def updateUserFwkById(cfwk_id):

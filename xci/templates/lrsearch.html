@@ -305,7 +305,8 @@
 					greedy: true,
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'lr_title': $(ui.draggable).find('a').text(),'c_id': value._id, 'c_uri':value.uri,
+							'c_content':value.description};
 						$.post(SCRIPT_ROOT+"link_lr_comp", postData, function(data, status){
 							alert(data);
 						});
@@ -329,7 +330,8 @@
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'lr_title': $(ui.draggable).find('a').text(), 'c_id': value._id, 'c_uri':value.uri,
+							'c_content':value.description};
 						$.post(SCRIPT_ROOT+"link_lr_cfwk", postData, function(data, status){
 							alert(data);
 						});
@@ -353,7 +355,8 @@
 				.droppable({
 					hoverClass: "ui-state-hover",
 					drop: function(event, ui){
-						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'c_id': value._id};
+						var postData = {'lr_uri': $(ui.draggable).find('a').attr('href'), 'lr_title': $(ui.draggable).find('a').text(), 'c_id': value._id, 'c_uri':value.uri,
+							'c_content':value.description};
 						$.post(SCRIPT_ROOT+"link_lr_pfwk", postData, function(data, status){
 							alert(data);
 						});

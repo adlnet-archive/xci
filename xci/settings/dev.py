@@ -13,6 +13,9 @@ DEFAULT_PROFILE = {
     "password" : "1234"
 }
 
+LR_PUBLISH_NAME = "lou.wolford.ctr@adlnet.gov"
+LR_PUBLISH_PASSWORD = "$c0rmR0ck$"
+
 HEADERS = {        
     'Authorization': DEFAULT_PROFILE['auth'],
     'content-type': 'application/json',        
