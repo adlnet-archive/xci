@@ -85,10 +85,10 @@ def load_user(user):
     if isinstance(user, basestring):
         userobj = User(user, 'get')
         # TODO: can this be changed to just use the id prop on User
-        u_id = userobj.get_id()
+        u_id = userobj.id
         return userobj
     else:
-        u_id = user.get_id()
+        u_id = user.id
         return user
 
 # Return home template
@@ -150,7 +150,8 @@ def sign_up():
             users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
                 'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 'roles':role})
 
-            user = User(rf.username.data, generate_password_hash(rf.password.data))
+            user = User(rf.username.data, generate_password_hash(rf.password.data),
+                        rf.email.data, rf.first_name.data, rf.last_name.data, role)
             login_user(user)
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
@@ -165,9 +166,9 @@ def competencies():
     
     if uri:      
         if current_user.is_authenticated():
-            username = current_user.id
-            user = models.getUserProfile(username)            
-            d['registered'] = str(hash(uri)) in user['competencies'].keys()
+            user = User(current_user.id)
+            comps = user.getAllComps()            
+            d['registered'] = str(hash(uri)) in comps.keys()
 
         d['uri'] = uri
         comp = models.getCompetency(uri, objectid=True)

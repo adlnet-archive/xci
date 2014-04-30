@@ -114,36 +114,36 @@ class User(UserMixin):
 
     @property
     def id(self):
-        return self.userprofile.profile['username']
+        return self.profile['username']
     
     # Get the userprofile from the db based on id
     # gotta have this for flask login
-    def get_id(self):
-        return self.userprofile.profile['username']
+    # def get_id(self):
+    #     return self.userprofile.profile['username']
 
     @property
     def last_name(self):
-        return self.userprofile.profile['last_name']
+        return self.profile['last_name']
 
     @last_name.setter
     def last_name(self, value):
-        self.userprofile.profile['last_name'] = value
+        self.profile['last_name'] = value
     
     @property
     def first_name(self):
-        return self.userprofile.profile['first_name']
+        return self.profile['first_name']
 
     @first_name.setter
     def first_name(self, value):
-        self.userprofile.profile['first_name'] = value
+        self.profile['first_name'] = value
     
     @property
     def email(self):
-        return self.userprofile.profile['email']
+        return self.profile['email']
 
     @email.setter
     def email(self, value):
-        self.userprofile.profile['email'] = value
+        self.profile['email'] = value
     
     def save(self):
         self.userprofile.save()
@@ -155,25 +155,25 @@ class User(UserMixin):
         }
 
     def getComp(self, uri):
-        return self.userprofile['competencies'][str(hash(uri))]
+        return self.profile['competencies'][str(hash(uri))]
 
     def getCompfwk(self, uri):
-        return self.userprofile['compfwks'][str(hash(uri))]
+        return self.userprofile.profile['compfwks'][str(hash(uri))]
 
     def getPerfwk(self, uri):
-        return self.userprofile['perfwks'][str(hash(uri))]
+        return self.userprofile.profile['perfwks'][str(hash(uri))]
 
     def getAllComps(self):
-        return self.userprofile['competencies']
+        return self.userprofile.profile['competencies']
 
     # Given a URI and Userid, store a copy of the comp in the user profile
     def addComp(self, uri):
         h = str(hash(uri))
-        if not self.userprofile.get('competencies', False):
+        if not self.userprofile.profile.get('competencies', False):
             self.userprofile['competencies'] = {}
-        if uri and h not in self.userprofile['competencies']:
+        if uri and h not in self.userprofile.profile['competencies']:
             comp = getCompetency(uri)
-            self.userprofile['competencies'][h] = comp
+            self.userprofile.profile['competencies'][h] = comp
             self.save()
 
     def addFwk(self, uri):
@@ -182,11 +182,11 @@ class User(UserMixin):
         # pdb.set_trace()
 
         fh = str(hash(uri))
-        if not self.userprofile.get('compfwks', False):
-            self.userprofile['compfwks'] = {}
-        if uri and fh not in self.userprofile['compfwks']:
+        if not self.userprofile.profile.get('compfwks', False):
+            self.userprofile.profile['compfwks'] = {}
+        if uri and fh not in self.userprofile.profile['compfwks']:
             fwk = getCompetencyFramework(uri)
-            self.userprofile['compfwks'][fh] = fwk
+            self.userprofile.profile['compfwks'][fh] = fwk
             for c in fwk['competencies']:
                 self.addComp(c['uri'])
             self.save()
