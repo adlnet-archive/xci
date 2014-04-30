@@ -207,19 +207,18 @@ def competencies():
 @app.route('/me_competencies')
 @login_required
 def me_competencies():
-    username = current_user.id
-    user = models.getUserProfile(username)
+    user = User(current_user.id)
 
     d = {}
     uri = request.args.get('uri', None)
 
     if uri:      
         d['uri'] = uri
-        comp = models.getCompFromUserProfile(user, uri)
+        comp = user.getComp(uri)
         d['comp'] = comp
         return render_template('me_comp-details.html', **d)
 
-    d['comps'] = models.GetAllCompsFromUserProfile(user)
+    d['comps'] = user.getAllComps()
     return render_template('me_competencies.html', **d)
 
 
@@ -231,10 +230,8 @@ def frameworks():
         uri = request.args.get('uri', None)
         if uri:
             d = {}
-            if current_user.is_authenticated():
-                username = current_user.id
-                user = models.getUserProfile(username)            
-                d['registered'] = str(hash(uri)) in user['compfwks'].keys()
+            if current_user.is_authenticated():         
+                d['registered'] = str(hash(uri)) in User(current_user.id).profile['compfwks'].keys()
 
             d['uri'] = uri
             
@@ -276,14 +273,12 @@ def frameworks():
 @app.route('/me_frameworks', methods=["GET"])
 @login_required
 def me_frameworks():
-    username = current_user.id
-    user = models.getUserProfile(username)
-
+    user = User(current_user.id)
     uri = request.args.get('uri', None)
     if uri:
         d = {}
         d['uri'] = uri
-        d['fwk'] = models.getCompfwkFromUserProfile(user, uri)
+        d['fwk'] = user.getCompfwk(uri)
         return render_template('me_compfwk-details.html', **d)
     else:
         abort(404)
@@ -297,10 +292,8 @@ def perfwks():
         uri = request.args.get('uri', None)
         d['error'] = request.args.get('error', None)
         if uri:
-            if current_user.is_authenticated():
-                username = current_user.id
-                user = models.getUserProfile(username)            
-                d['registered'] = str(hash(uri)) in user['perfwks'].keys()
+            if current_user.is_authenticated():           
+                d['registered'] = str(hash(uri)) in User(current_user.id).profile['perfwks'].keys()
 
             d['uri'] = uri
             d['fwk'] = models.getPerformanceFramework(uri)
@@ -323,14 +316,11 @@ def perfwks():
 @app.route('/me_perfwks', methods=["GET"])
 @login_required
 def me_perfwks():
-    username = current_user.id
-    user = models.getUserProfile(username)
-
     uri = request.args.get('uri', None)
     if uri:
         d = {}
         d['uri'] = uri
-        d['fwk'] = models.getPerfwkFromUserProfile(user, uri)
+        d['fwk'] = User(current_user.id).getPerfwk(uri)
         return render_template('me_perfwk-details.html', **d)
     else:
         abort(404)
@@ -339,14 +329,13 @@ def me_perfwks():
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-    username = current_user.id
-    user = models.getUserProfile(username)
-    user_comps = user['competencies'].values()
-    user_fwks = user['compfwks'].values()
-    user_pfwks = user['perfwks'].values()
+    user = User(current_user.id)
+    user_comps = user.profile['competencies'].values()
+    user_fwks = user.profile['compfwks'].values()
+    user_pfwks = user.profile['perfwks'].values()
 
-    import pdb
-    pdb.set_trace()
+    # import pdb
+    # pdb.set_trace()
 
     # Calculate complete competencies for users and return count
     # completed_comps = sum(1 for c in user_comps if c.get('completed',False))
@@ -356,7 +345,7 @@ def me():
             bs.append(1)
     completed_comps = len(bs)
     started_comps = len(user_comps) - completed_comps   
-    name = user['first_name'] + ' ' + user['last_name']
+    name = user.profile['first_name'] + ' ' + user.profile['last_name']
 
     mozilla_asserts = []
     for perf in user_comps:
@@ -373,34 +362,33 @@ def me():
         mozilla_asserts.append(moz_dict)
 
     return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name,
-        email=user['email'], mozilla_asserts=mozilla_asserts)
+        email=user.profile['email'], mozilla_asserts=mozilla_asserts)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
     # Hashes of the uri of the comp are used to store them in the userprofile object
+    user = User(current_user.id)
     if request.form.get('comp_uri', None):
-        models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
+        user.addComp(request.form.get('comp_uri', None))
     elif request.form.get('fwk_uri', False):
-        models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
+        user.addFwk(request.form.get('fwk_uri', None))
     elif request.form.get('perfwk_uri', False):
-        models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
+        user.addPerFwk(request.form.get('perfwk_uri', None))
 
     return redirect(url_for("me"))
 
 @app.route('/me/update', methods=["POST"])
 @login_required
 def update_comp():
+    user = User(current_user.id)
     if request.form.get('comp_uri', None):
-        # models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
-        pass
+        user.addComp(request.form.get('comp_uri', None))
     elif request.form.get('fwk_uri', False):
-        # models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
-        pass
+        user.addFwk(request.form.get('fwk_uri', None))
     elif request.form.get('perfwk_uri', False):
-        # models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
-        pass
+        user.addPerFwk(request.form.get('perfwk_uri', None))
 
     return redirect(url_for("me"))
 
@@ -415,27 +403,22 @@ def load_cc():
 @app.route('/me/settings', methods=["GET"])
 @login_required
 def me_settings():
-    username = current_user.id
-    user = db.userprofiles.find_one({'username':username})
-    user_profiles = user['lrsprofiles']
-    
+    user_profiles = User(current_user.id).profile['lrsprofiles']
     return render_template('mysettings.html', user_profiles=user_profiles)
 
 # Update the LRS endpoints for the user
 @app.route('/me/settings/update_endpoint', methods=["POST"])
 @login_required
 def update_endpoint():
-    username = current_user.id
     # Werkzeug returns immutabledict object when multiple forms are on page. have to copy to get values
     sf = request.form.copy()
-    
     default = False
     if 'default' in sf.keys():
         default = True
 
     # Update profile with form input
-    user = db.userprofiles.find_one({'username':username})
-    for profile in user['lrsprofiles']:
+    user = User(current_user.id)
+    for profile in user.profile['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
             profile['username'] = sf['auth']
@@ -445,18 +428,17 @@ def update_endpoint():
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
 
-    db.userprofiles.update({'username':username}, user)
+    user.save()
     return redirect(url_for('me'))
 
 # Add an LRS endpoint to a user profile
 @app.route('/me/settings/add_endpoint', methods=["POST"])
 @login_required
 def add_endpoint():
-    username = current_user.id
     af = request.form.copy()
-    user = db.userprofiles.find_one({'username':username})
+    user = User(current_user.id)
 
-    existing_names = [p['name'] for p in user['lrsprofiles']]
+    existing_names = [p['name'] for p in user.profile['lrsprofiles']]
 
     # Make sure name doesn't exist already
     if not af['newname'] in existing_names:
@@ -473,11 +455,11 @@ def add_endpoint():
         new_prof['default'] = default
 
         if default:
-            for profile in user['lrsprofiles']:
+            for profile in user.profile['lrsprofiles']:
                 profile['default'] = False
 
-        user['lrsprofiles'].append(new_prof)
-        db.userprofiles.update({'username':username}, user)
+        user.profile['lrsprofiles'].append(new_prof)
+        user.save()
     
     return redirect(url_for('me'))
 
