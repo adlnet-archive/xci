@@ -115,11 +115,6 @@ class User(UserMixin):
     @property
     def id(self):
         return self.profile['username']
-    
-    # Get the userprofile from the db based on id
-    # gotta have this for flask login
-    # def get_id(self):
-    #     return self.userprofile.profile['username']
 
     @property
     def last_name(self):

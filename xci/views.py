@@ -84,7 +84,6 @@ def check_admin(func):
 def load_user(user):
     if isinstance(user, basestring):
         userobj = User(user, 'get')
-        # TODO: can this be changed to just use the id prop on User
         u_id = userobj.id
         return userobj
     else:
@@ -144,11 +143,6 @@ def sign_up():
                 role = ['teacher', 'student']
             else:
                 role = ['student']
-
-            # Add user to db and login
-            users = db.userprofiles
-            users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 'roles':role})
 
             user = User(rf.username.data, generate_password_hash(rf.password.data),
                         rf.email.data, rf.first_name.data, rf.last_name.data, role)
@@ -345,7 +339,7 @@ def me():
             bs.append(1)
     completed_comps = len(bs)
     started_comps = len(user_comps) - completed_comps   
-    name = user.profile['first_name'] + ' ' + user.profile['last_name']
+    name = user.first_name + ' ' + user.last_name
 
     mozilla_asserts = []
     for perf in user_comps:
@@ -362,7 +356,7 @@ def me():
         mozilla_asserts.append(moz_dict)
 
     return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name,
-        email=user.profile['email'], mozilla_asserts=mozilla_asserts)
+        email=user.email, mozilla_asserts=mozilla_asserts)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
