@@ -34,6 +34,7 @@ Add LR credentials
 
 	Whenever you link a piece of Learning Registry content to a competency/competency framework/performance framework, this system sends a paradata document back to the LR. Create a name and 
 	password for Node01 of the [Learning Registry](https://node01.public.learningregistry.net/apps/oauth-key-management/). Then set LR_PUBLISH_NAME and LR_PUBLISH_PASSWORD in your settings file.
+	You will probably want to test this out first at the [LR sandbox](https://node01.public.learningregistry.net/apps/oauth-key-management/). To publish to sandbox, the LR_PUBLISH_ENDPOINT should be https://sandbox.learningregistry.org/publish and to publish to node01, it should be https://node01.public.learningregistry.net/publish. 
 
 Run
 

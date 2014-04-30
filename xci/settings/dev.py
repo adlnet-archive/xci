@@ -15,6 +15,7 @@ DEFAULT_PROFILE = {
 
 LR_PUBLISH_NAME = "lou.wolford.ctr@adlnet.gov"
 LR_PUBLISH_PASSWORD = "$c0rmR0ck$"
+LR_PUBLISH_ENDPOINT = "https://sandbox.learningregistry.org/publish"
 
 HEADERS = {        
     'Authorization': DEFAULT_PROFILE['auth'],

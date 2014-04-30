@@ -500,11 +500,11 @@ def link_lr_comp():
         return e.message
 
     try:
-        models.sendLRParadata(lr_uri, lr_title, user_role, "competency", c_uri, c_content)
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "competency", c_uri, c_content)
     except Exception, e:
-        return "LR metadata updated but paradata was not - " + e.message
+        return "Competency updated but paradata was not sent to LR - " + e.message
 
-    return "Successfully linked competency"
+    return "Successfully linked competency\n Here is the LR paradata doc_ID:" + doc_id
 
 # Link lr data to comp fwk
 @app.route('/link_lr_cfwk', methods=['POST'])
@@ -528,11 +528,11 @@ def link_lr_cfwk():
         return e.message
 
     try:
-        models.sendLRParadata(lr_uri, lr_title, user_role, "competency framework", c_uri, c_content)
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "competency framework", c_uri, c_content)
     except Exception, e:
-        return "LR metadata updated but paradata was not - " + e.message
+        return "Competency framework updated but paradata was not sent to LR - " + e.message
 
-    return "Successfully linked competency framework"
+    return "Successfully linked competency framework\n Here is the LR paradata doc_ID:" + doc_id
 
 # Linke lr data to per fwk
 @app.route('/link_lr_pfwk', methods=['POST'])
@@ -556,11 +556,11 @@ def link_lr_pfwk():
         return e.message
 
     try:
-        models.sendLRParadata(lr_uri, lr_title, user_role, "performance framework", c_uri, c_content)
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "performance framework", c_uri, c_content)
     except Exception, e:
-        return "LR metadata updated but paradata was not - " + e.message
+        return "Performance framework updated but paradata was not sent to LR - " + e.message
 
-    return "Successfully linked performance framework"
+    return "Successfully linked performance framework\n Here is the LR paradata doc_ID:" + doc_id
 
 # Admin reset button to clear entire db
 @app.route('/admin/reset', methods=["POST"])

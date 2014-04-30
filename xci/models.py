@@ -293,12 +293,15 @@ def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content):
             }
         ]
     }
-    r = requests.post("https://node01.public.learningregistry.net/publish", data=json.dumps(paradata), headers={"Content-Type":"application/json"},
+    r = requests.post(current_app.config['LR_PUBLISH_ENDPOINT'], data=json.dumps(paradata), headers={"Content-Type":"application/json"},
         auth=HTTPBasicAuth(current_app.config['LR_PUBLISH_NAME'], current_app.config['LR_PUBLISH_PASSWORD']), verify=False)
-    print r.content
+    
     if r.status_code != 200:
         message = json.loads(r.content)['message']
         raise LRException(message)
+    else:
+        return json.loads(r.content)['document_results'][0]['doc_ID']
+
 
 # Update all comp fwks in the user by id
 def updateUserFwkById(cfwk_id):
