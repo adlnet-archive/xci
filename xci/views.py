@@ -328,9 +328,6 @@ def me():
     user_fwks = user.profile['compfwks'].values()
     user_pfwks = user.profile['perfwks'].values()
 
-    # import pdb
-    # pdb.set_trace()
-
     # Calculate complete competencies for users and return count
     # completed_comps = sum(1 for c in user_comps if c.get('completed',False))
     bs = []

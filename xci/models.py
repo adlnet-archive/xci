@@ -93,9 +93,6 @@ def createAssertion(userprof, uri):
                 # storeBakedBadges()
 
 
-
-
-
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
     def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
@@ -168,14 +165,11 @@ class User(UserMixin):
             self.profile['competencies'] = {}
         if uri and h not in self.profile['competencies']:
             comp = getCompetency(uri)
-            self.profile['competencies'][h] = comp
+            if comp:
+                self.profile['competencies'][h] = comp
             self.save()
 
     def addFwk(self, uri):
-        # we'll need that.. this one's broked
-        # import pdb
-        # pdb.set_trace()
-
         fh = str(hash(uri))
         if not self.profile.get('compfwks', False):
             self.profile['compfwks'] = {}
@@ -183,7 +177,10 @@ class User(UserMixin):
             fwk = getCompetencyFramework(uri)
             self.profile['compfwks'][fh] = fwk
             for c in fwk['competencies']:
-                self.addComp(c['uri'])
+                if c['type'] == "http://ns.medbiq.org/competencyframework/v1/":
+                    self.addFwk(c['uri'])
+                else:
+                    self.addComp(c['uri'])
             self.save()
 
     def addPerFwk(self, uri):
@@ -225,72 +222,6 @@ class UserProfile():
         if profile:
             self._profile = profile
         db.userprofiles.update({'username':self.userid}, self._profile, manipulate=False)
-
-# def getPerfwkFromUserProfile(prof, uri):
-#     return prof['perfwks'][str(hash(uri))]
-
-# def getCompfwkFromUserProfile(prof, uri):
-#     return prof['compfwks'][str(hash(uri))]
-
-# def getCompFromUserProfile(prof, uri):
-#     return prof['competencies'][str(hash(uri))]
-
-# def GetAllCompsFromUserProfile(prof):
-#     return prof['competencies']
-
-# # Update or insert user profile if id is given
-# def saveUserProfile(profile, userid=None):
-#     if userid:
-#         updateUserProfile(profile, userid)
-#     else:
-#         db.userprofiles.insert(profile)
-
-# # Perform actual update of profile
-# def updateUserProfile(profile, userid):
-#     db.userprofiles.update({'username':userid}, profile, manipulate=False)
-
-# Given a URI and Userid, store a copy of the comp in the user profile
-# def addCompToUserProfile(uri, userid, userprof=None):
-#     if not userprof:
-#         userprof = getUserProfile(userid)
-#     h = str(hash(uri))
-#     if not userprof.get('competencies', False):
-#         userprof['competencies'] = {}
-#     if uri and h not in userprof['competencies']:
-#         comp = getCompetency(uri)
-#         userprof['competencies'][h] = comp
-#         saveUserProfile(userprof, userid)
-
-# Given a URI and Userid, store a copy of the framework and comps in user profile
-# def addFwkToUserProfile(uri, userid):
-
-#     import pdb
-#     pdb.set_trace()
-
-#     userprof = getUserProfile(userid)
-#     fh = str(hash(uri))
-#     if not userprof.get('compfwks', False):
-#         userprof['compfwks'] = {}
-#     if uri and fh not in userprof['compfwks']:
-#         fwk = getCompetencyFramework(uri)
-#         userprof['compfwks'][fh] = fwk
-#         for c in fwk['competencies']:
-#             addCompToUserProfile(c['uri'], userid, userprof)
-#         saveUserProfile(userprof, userid)
-
-# Given URI and User id, store performance fwk, comp fwk, and comps in user profile
-# def addPerFwkToUserProfile(uri, userid):
-#     userprof = getUserProfile(userid)
-#     fh = str(hash(uri))
-#     if not userprof.get('perfwks', False):
-#         userprof['perfwks'] = {}
-#     if uri and fh not in userprof['perfwks']:
-#         fwk = getPerformanceFramework(uri)
-#         userprof['perfwks'][fh] = fwk
-#         # find the competency object uri for each component and add it to the user's list of competencies
-#         for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
-#             addCompToUserProfile(curi, userid, userprof)
-#         saveUserProfile(userprof, userid)
 
 # Use on search comp page-searches for search keyword in comp titles
 def searchComps(key):

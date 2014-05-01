@@ -71,8 +71,9 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         if not c:
             nxt = getXML(uri)
             c = parseMedBiqCompXML(nxt, obj['uri'])
-        obj['competencies'].append(c)
-        obj = addChild(obj, c['uri'])
+        if c:
+            obj['competencies'].append(c)
+            obj = addChild(obj, c['uri'])
     # removed this for now... look at medbiq compfwk Relation later: return structure(xmlbit, obj)
     ### save this object to the db, whatever it is
     if obj['type'] == MB_COMP_TYPE:
