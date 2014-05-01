@@ -42,9 +42,25 @@
         <dd>{{ fwk.relations }}</dd>
     </dl>
 </div>
-{% for c in fwk.competencies %}
+{% for c in fwk.competencies recursive %}
 <div class="col-xs-12">
     <div class="panel panel-default">
+    {% if c.type == 'http://ns.medbiq.org/competencyframework/v1/' %}
+        <div class="panel-heading">
+            <h3 class="panel-title"><a href="{{ url_for('frameworks') }}?uri={{c.uri}}">{{ c.title }}</a></h3>
+        </div>
+        <div class="panel-body">
+            <p>{{ c.description|safe }}</p>
+            <ul>
+            {% for lr in c.lr_data %}
+            <li><a href="{{ lr }}">LR Metadata</a></li>
+            {% else %}
+            There are no known linked LR resources
+            {% endfor %}
+            </ul>            
+        </div>
+        {{ loop(c.competencies)}}
+    {% else %}
         <div class="panel-heading">
             <h3 class="panel-title"><a href="{{ url_for('competencies') }}?uri={{c.uri}}">{{ c.title }}</a></h3>
         </div>
@@ -58,6 +74,7 @@
             {% endfor %}
             </ul>            
         </div>
+    {% endif %}
     </div>
 </div>
 {% endfor %}
