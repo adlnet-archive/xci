@@ -88,8 +88,6 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
 
 # obj is the comp in json, parenturi is string
 def addParent(obj, parentURI):
-    import pdb
-    pdb.set_trace()
     if parentURI:
         if not obj.get('relations', False):
             obj['relations'] = {}
