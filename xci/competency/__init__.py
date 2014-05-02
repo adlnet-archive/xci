@@ -49,6 +49,8 @@ def parseComp(uri):
 # parse medbiq xml, xmlbit is the ET.XML obj of the comp doc, parentURI used for fwks 
 # when this parse is recursively called to parse children
 def parseMedBiqCompXML(xmlbit, parentURI=None):
+    # import pdb
+    # pdb.set_trace()
     obj = {}
     obj['type'] = MB_COMP_FWK_TYPE if 'CompetencyFramework' in xmlbit.tag else MB_COMP_TYPE
     obj['uri'] = getEntry(xmlbit)
@@ -71,8 +73,11 @@ def parseMedBiqCompXML(xmlbit, parentURI=None):
         if not c:
             nxt = getXML(uri)
             c = parseMedBiqCompXML(nxt, obj['uri'])
-        obj['competencies'].append(c)
-        obj = addChild(obj, c['uri'])
+        if c:
+            c = addParent(c, obj['uri'])
+            models.updateCompetency(c)
+            obj['competencies'].append(addParent(c, obj['uri']))
+            obj = addChild(obj, c['uri'])
     # removed this for now... look at medbiq compfwk Relation later: return structure(xmlbit, obj)
     ### save this object to the db, whatever it is
     if obj['type'] == MB_COMP_TYPE:
@@ -88,7 +93,8 @@ def addParent(obj, parentURI):
             obj['relations'] = {}
         if not obj['relations'].get('childof'):
             obj['relations']['childof'] = []
-        obj['relations']['childof'].append(parentURI)
+        if parentURI not in obj['relations']['childof']:
+            obj['relations']['childof'].append(parentURI)
     return obj
 
 # obj is comp in json, childuri is string

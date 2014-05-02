@@ -4,14 +4,37 @@ import pytz
 import badgebakery
 import os
 import base64
+import requests
+import gridfs
+from requests.auth import HTTPBasicAuth
+import json
 from bson.objectid import ObjectId
 from flask_login import UserMixin
 from pymongo import MongoClient
 from flask import jsonify, current_app
+from werkzeug.security import generate_password_hash
 
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+fs = gridfs.GridFS(db)
+
+# Exception class for the LR
+class LRException(Exception):
+    pass
+
+# Badge and assertion functions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in current_app.config['ALLOWED_BADGE_EXTENSIONS']
+
+def fsSaveBadgeFile(badge, grid_name):
+    return fs.put(badge, contentType=badge.content_type, filename=grid_name)
+
+def fsGetLastVersion(filename):
+    return fs.get_last_version(filename)
+
+def fsGetByID(_id):
+    return fs.get(_id)
 
 def getBadgeIdByName(name):
     return str(db.badgeclass.find_one({'name': name})['_id'])
@@ -91,97 +114,264 @@ def createAssertion(userprof, uri):
                 # # Once baked image is created, store in mongo
                 # storeBakedBadges()
 
-
-
-
-
-# User class to montor who is logged in - inherits from userMixin class from flask_mongo
-class User(UserMixin):
-    def __init__(self, userid, password):
-        self.id = userid
-        self.password = password
-        self.roles = db.userprofiles.find_one({"username": self.id})['roles']
-
-    # Get the userprofile from the db based on id
-    def get_id(self):
-        try:
-            user = db.userprofiles.find_one({"username":self.id})
-            return unicode(self.id)
-        except Exception, e:
-            raise e
-
-def getFullAgent(userprofile):
-    return {
-        "mbox" : "mailto:%s" % userprofile['email'],
-        "name" : "%s %s" % (userprofile['first_name'], userprofile['last_name'])
-    }
-
-# Return one userprofile based on id
-def getUserProfile(userid):
-    return db.userprofiles.find_one({'username':userid})
-
-def getPerfwkFromUserProfile(prof, uri):
-    return prof['perfwks'][str(hash(uri))]
-
-def getCompfwkFromUserProfile(prof, uri):
-    return prof['compfwks'][str(hash(uri))]
-
-def getCompFromUserProfile(prof, uri):
-    return prof['competencies'][str(hash(uri))]
-
-def GetAllCompsFromUserProfile(prof):
-    return prof['competencies']
-
-# Update or insert user profile if id is given
-def saveUserProfile(profile, userid=None):
-    if userid:
-        updateUserProfile(profile, userid)
-    else:
-        db.userprofiles.insert(profile)
-
 # Perform actual update of profile
 def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
-# Given a URI and Userid, store a copy of the comp in the user profile
-def addCompToUserProfile(uri, userid, userprof=None):
-    if not userprof:
-        userprof = getUserProfile(userid)
-    h = str(hash(uri))
-    if not userprof.get('competencies', False):
-        userprof['competencies'] = {}
-    if uri and h not in userprof['competencies']:
-        comp = getCompetency(uri)
-        userprof['competencies'][h] = comp
-        saveUserProfile(userprof, userid)
 
-# Given a URI and Userid, store a copy of the framework and comps in user profile
-def addFwkToUserProfile(uri, userid):
-    userprof = getUserProfile(userid)
-    fh = str(hash(uri))
-    if not userprof.get('compfwks', False):
-        userprof['compfwks'] = {}
-    if uri and fh not in userprof['compfwks']:
-        fwk = getCompetencyFramework(uri)
-        userprof['compfwks'][fh] = fwk
-        for c in fwk['competencies']:
-            addCompToUserProfile(c['uri'], userid, userprof)
-        saveUserProfile(userprof, userid)
+# User class to montor who is logged in - inherits from userMixin class from flask_mongo
+class User(UserMixin):
+    def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
+        self.userprofile = UserProfile(userid, password, email, first_name, last_name, roles)
+        # self.id = userid
+        self.password = self.userprofile.profile['password']
+        self.roles = self.userprofile.profile['roles']
 
-# Given URI and User id, store performance fwk, comp fwk, and comps in user profile
-def addPerFwkToUserProfile(uri, userid):
-    userprof = getUserProfile(userid)
-    fh = str(hash(uri))
-    if not userprof.get('perfwks', False):
-        userprof['perfwks'] = {}
-    if uri and fh not in userprof['perfwks']:
-        fwk = getPerformanceFramework(uri)
-        userprof['perfwks'][fh] = fwk
-        # find the competency object uri for each component and add it to the user's list of competencies
-        for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
-            addCompToUserProfile(curi, userid, userprof)
-        saveUserProfile(userprof, userid)
+    @property
+    def profile(self):
+        return self.userprofile.profile
 
+    @profile.setter
+    def profile(self, value):
+        self.userprofile.profile = value
+
+    @property
+    def id(self):
+        return self.profile['username']
+
+    @property
+    def last_name(self):
+        return self.profile['last_name']
+
+    @last_name.setter
+    def last_name(self, value):
+        self.profile['last_name'] = value
+    
+    @property
+    def first_name(self):
+        return self.profile['first_name']
+
+    @first_name.setter
+    def first_name(self, value):
+        self.profile['first_name'] = value
+    
+    @property
+    def email(self):
+        return self.profile['email']
+
+    @email.setter
+    def email(self, value):
+        self.profile['email'] = value
+    
+    def save(self):
+        self.userprofile.save()
+
+    def getFullAgent(self):
+        return {
+            "mbox" : "mailto:%s" % self.profile['email'],
+            "name" : "%s %s" % (self.profile['first_name'], self.profile['last_name'])
+        }
+
+    def getComp(self, uri):
+        return self.profile['competencies'][str(hash(uri))]
+
+    def getCompfwk(self, uri):
+        return self.profile['compfwks'][str(hash(uri))]
+
+    def getPerfwk(self, uri):
+        return self.profile['perfwks'][str(hash(uri))]
+
+    def getAllComps(self):
+        return self.profile['competencies']
+
+    # Given a URI and Userid, store a copy of the comp in the user profile
+    def addComp(self, uri):
+        h = str(hash(uri))
+        if not self.profile.get('competencies', False):
+            self.profile['competencies'] = {}
+        if uri and h not in self.profile['competencies']:
+            comp = getCompetency(uri)
+            if comp:
+                self.profile['competencies'][h] = comp
+            self.save()
+
+    def addFwk(self, uri):
+        fh = str(hash(uri))
+        if not self.profile.get('compfwks', False):
+            self.profile['compfwks'] = {}
+        if uri and fh not in self.profile['compfwks']:
+            fwk = getCompetencyFramework(uri)
+            self.profile['compfwks'][fh] = fwk
+            for c in fwk['competencies']:
+                if c['type'] == "http://ns.medbiq.org/competencyframework/v1/":
+                    self.addFwk(c['uri'])
+                else:
+                    self.addComp(c['uri'])
+            self.save()
+
+    def addPerFwk(self, uri):
+        fh = str(hash(uri))
+        if not self.profile.get('perfwks', False):
+            self.profile['perfwks'] = {}
+        if uri and fh not in self.profile['perfwks']:
+            fwk = getPerformanceFramework(uri)
+            self.profile['perfwks'][fh] = fwk
+            # find the competency object uri for each component and add it to the user's list of competencies
+            for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
+                self.addComp(curi)
+            self.save()
+
+
+class UserProfile():
+    def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
+        self.userid = userid
+        self._profile = db.userprofiles.find_one({'username':userid})
+        # make one if it didn't return a profile
+        if not self._profile:
+            db.userprofiles.insert({'username': userid, 'password':generate_password_hash(password), 
+                                    'email':email, 'first_name':first_name, 'last_name':last_name, 
+                                    'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 
+                                    'roles':roles})
+
+            self._profile = db.userprofiles.find_one({'username':userid})
+
+    @property
+    def profile(self):
+        return self._profile
+
+    @profile.setter
+    def profile(self, value):
+        self._profile = self.save(value)
+
+    # Update or insert user profile if id is given
+    def save(self, profile=None):
+        if profile:
+            self._profile = profile
+        db.userprofiles.update({'username':self.userid}, self._profile, manipulate=False)
+
+
+
+
+# LR functions
+# Update all comp fwks
+def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
+    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserFwkById(cfwk_id)
+
+#  Update all per fwks
+def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
+    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserPfwkById(pfwk_id)
+
+# Update the comp with new LR data-calls other LR updates
+def updateCompetencyLR(c_id,lr_uri):
+    if isinstance(c_id, basestring):
+        c_id = ObjectId(c_id)
+
+    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
+    comp_uri = db.competency.find_one({'_id': c_id})['uri']
+    updateUserCompLR(comp_uri, lr_uri)
+    updateCompInFwksLR(comp_uri, lr_uri)
+
+# Update the comp in all users
+def updateUserCompLR(c_uri, lr_uri):
+    h = str(hash(c_uri))
+    set_field = 'competencies.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$addToSet':{set_field+'.lr_data': lr_uri}}, multi=True)
+
+# Updates all comp fwks that contain that comp
+def updateCompInFwksLR(c_uri, lr_uri):
+    # Remove this field in comp before updating the fwk
+    db.compfwk.update({'competencies':{'$elemMatch':{'uri':c_uri}}}, {'$addToSet': {'competencies.$.lr_data': lr_uri }}, multi=True)
+    updateUserFwkByURILR(c_uri, lr_uri)
+
+# Updates all comps in fwks that are in the userprofiles
+def updateUserFwkByURILR(c_uri, lr_uri):
+    comp = db.competency.find_one({'uri': c_uri})
+    if not comp['type'] == 'commoncoreobject':
+        try:
+            parents = comp['relations']['childof']
+        except KeyError:
+            parents = []
+
+        # For each parent fwk the comp is in, update it in that userprofile
+        for uri in parents:
+            fwk = db.compfwk.find({'uri': uri})[0]
+            h = str(hash(uri))
+            set_field = 'compfwks.' + h + '.competencies'
+            db.userprofiles.update({set_field:{'$elemMatch':{'uri':c_uri}}}, {'$addToSet':{set_field + '.$.lr_data': lr_uri}}, multi=True)
+
+def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content): 
+    date = datetime.datetime.now(pytz.utc).isoformat()
+    paradata = {
+        "documents": [
+            {
+                "TOS": {
+                    "submission_TOS": "http://www.learningregistry.org/tos/cc0/v0-5/"
+                },
+                "doc_type": "resource_data",
+                "doc_version": "0.23.0",
+                "resource_data_type": "paradata",
+                "active": True,
+                "identity": {
+                    "owner": "",
+                    "submitter": "ADL",
+                    "submitter_type": "agent",
+                    "signer": "ADL",
+                    "curator": ""
+                },
+                "resource_locator": lr_uri,
+                "payload_placement": "inline",
+                "payload_schema": [
+                    "LR Paradata 1.0"
+                ],
+                "resource_data": {
+                    "activity":{
+                        "actor":{
+                            "description": ["ADL XCI " + user_role, lr_title],
+                            "objectType": user_role
+                        },
+                        "verb":{
+                            "action": "matched",
+                            "date": date,
+                            "context":{
+                                "id":current_app.config['DOMAIN_NAME'],
+                                "description":"ADL's XCI project",
+                                "objectType": "Application"
+                            }
+                        },
+                        "object":{
+                            "id": lr_uri
+                        },
+                        "related":[{
+                            "objectType": c_type,
+                            "id": c_uri,
+                            "content": c_content
+                            }],
+                        "content": "A resource found at "+lr_uri+" was matched to the "+c_type+" with ID "+c_uri+" by an "+user_role+" on "+current_app.config['DOMAIN_NAME']+" system on "+date
+                    }
+                }
+            }
+        ]
+    }
+    r = requests.post(current_app.config['LR_PUBLISH_ENDPOINT'], data=json.dumps(paradata), headers={"Content-Type":"application/json"},
+        auth=HTTPBasicAuth(current_app.config['LR_PUBLISH_NAME'], current_app.config['LR_PUBLISH_PASSWORD']), verify=False)
+    
+    if r.status_code != 200:
+        message = json.loads(r.content)['message']
+        raise LRException(message)
+    else:
+        return json.loads(r.content)['document_results'][0]['doc_ID']
+
+
+
+
+
+
+
+
+
+# General comp/fwk functions
 # Use on search comp page-searches for search keyword in comp titles
 def searchComps(key):
     regx = re.compile(key, re.IGNORECASE)
@@ -196,44 +386,6 @@ def saveCompetency(json_comp):
     else:
         db.competency.insert(json_comp, manipulate=False)
 
-# Updates all comps in fwks that are in the userprofiles
-def updateUserFwkByComp(comp):
-    if not comp['type'] == 'commoncoreobject':
-        try:
-            parents = comp['relations']['childof']
-        except KeyError:
-            parents = []
-
-        # For each parent fwk the comp is in, update it in that userprofile
-        for uri in parents:
-            fwk = db.compfwk.find({'uri': uri})[0]
-            h = str(hash(uri))
-            set_field = 'compfwks.' + h
-            db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
-
-# Updates all comp fwks that contain that comp
-def updateCompInFwks(comp):
-    # Remove this field in comp before updating the fwk
-    db.compfwk.update({'competencies':{'$elemMatch':{'uri':comp['uri']}}}, {'$set': {'competencies.$': comp}}, multi=True)
-    updateUserFwkByComp(comp)
-
-# Update the comp in all users
-def updateUserComp(comp):
-    h = str(hash(comp['uri']))
-    set_field = 'competencies.' + h
-    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: comp}}, multi=True)
-
-# Update the comp with new LR data-calls other LR updates
-def updateCompetencyLR(c_id,lr_uri):
-    if isinstance(c_id, basestring):
-        c_id = ObjectId(c_id)
-
-    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
-    comp = db.competency.find({'_id': c_id})[0]
-    del comp['_id']
-    updateUserComp(comp)
-    updateCompInFwks(comp)
-
 # Update all comp fwks in the user by id
 def updateUserFwkById(cfwk_id):
     fwk = db.compfwk.find_one({'_id': ObjectId(cfwk_id)})
@@ -241,22 +393,12 @@ def updateUserFwkById(cfwk_id):
     set_field = 'compfwks.' + h
     db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
 
-# Update all comp fwks
-def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
-    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserFwkById(cfwk_id)
-
 # Update all per fwks in the user by id
 def updateUserPfwkById(pfwk_id):
     fwk = db.perfwk.find_one({'_id': ObjectId(pfwk_id)})
     h = str(hash(fwk['uri']))
     set_field = 'perfwks.' + h
     db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
-
-#  Update all per fwks
-def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
-    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserPfwkById(pfwk_id)
 
 # Update the competency by uri
 def updateCompetency(json_comp):
@@ -323,9 +465,9 @@ def savePerformanceFramework(json_fwk):
                 badgeclass = {
                     "name": p['id'],
                     "description": p['description'],
-                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
+                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['BADGE_UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
                     "criteria": json_fwk['uri'] + '.xml',
-                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER']),
+                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['BADGE_UPLOAD_FOLDER']),
                     'uuidurl': json_fwk['uuidurl']
                 }
                 db.badgeclass.insert(badgeclass)
@@ -356,6 +498,21 @@ def getPerformanceFramework(uri, objectid=False):
 def findPerformanceFrameworks(d=None):
     return [x for x in db.perfwk.find(d)]
 
+# Use on search comp page-searches for search keyword in comp titles
+def searchComps(key):
+    regx = re.compile(key, re.IGNORECASE)
+    return db.competency.find({"title": regx})
+
+
+
+
+def checkUsernameExists(username):
+    return db.userprofiles.find_one({'username':username}) is not None
+
+def checkEmailExists(email):
+    return db.userprofiles.find_one({'email':email}) is not None
+
+# Admin reset functions
 # Drop all of the comp collections
 def dropCompCollections():
     db.drop_collection('competency')

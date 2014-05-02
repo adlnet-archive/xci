@@ -3,38 +3,22 @@ import json
 import models
 import requests
 import os
-import gridfs
-from xci import app, competency, performance
-from xci.competency import MBCompetency as mbc
-from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
-from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
-from models import User
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
-from pymongo import MongoClient
-from werkzeug.security import generate_password_hash
-from werkzeug import secure_filename
 from urlparse import urlparse
 from itertools import imap
 from operator import itemgetter
+from functools import wraps
+from xci import app, competency, performance
+from xci.competency import MBCompetency as mbc
+from models import User
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
+from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
+from werkzeug.security import generate_password_hash
+from werkzeug import secure_filename
 
 # Init login_manager
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# Init db
-mongo = MongoClient()
-db = mongo.xci
-fs = gridfs.GridFS(db)
-
-# lr uri to obtain docs
-LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
-
-app.config['UPLOAD_FOLDER'] = 'static/badgeclass'
-app.config['ALLOWED_EXTENSIONS'] = set(['png'])
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 @app.route('/badge_upload', methods=['POST'])
 def badge_upload():
@@ -45,7 +29,7 @@ def badge_upload():
     componentid = request.form['componentid']
 
     # Make sure the file name is allowed and secure (just png for now)
-    if badge and allowed_file(secure_filename(badge.filename)):
+    if badge and models.allowed_file(secure_filename(badge.filename)):
         parts = urlparse(url)
         path_parts = parts.path.split('/')
 
@@ -53,7 +37,7 @@ def badge_upload():
         perflvl_id = os.path.splitext(path_parts[5])[0]
         grid_name = ':'.join(path_parts[3:6])
         try:
-            saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+            saved = models.fsSaveBadgeFile(badge, grid_name)
         except Exception, e:
             return redirect(url_for('perfwks', uri=uri, error=e.message))
         else:
@@ -84,10 +68,10 @@ def check_admin(func):
 def load_user(user):
     if isinstance(user, basestring):
         userobj = User(user, 'get')
-        u_id = userobj.get_id()
+        u_id = userobj.id
         return userobj
     else:
-        u_id = user.get_id()
+        u_id = user.id
         return user
 
 # Return home template
@@ -136,20 +120,7 @@ def sign_up():
         # Add necessary roles as needed
         rf = RegistrationForm(request.form)
         if rf.validate_on_submit():
-            role = rf.role.data
-            if role == 'admin':
-                role = ['admin', 'teacher', 'student']
-            elif role == 'teacher':
-                role = ['teacher', 'student']
-            else:
-                role = ['student']
-
-            # Add user to db and login
-            users = db.userprofiles
-            users.insert({'username': rf.username.data, 'password':generate_password_hash(rf.password.data), 'email':rf.email.data,
-                'first_name':rf.first_name.data, 'last_name':rf.last_name.data, 'competencies':{}, 'compfwks':{}, 'perfwks':{}, 'lrsprofiles':[], 'roles':role})
-
-            user = User(rf.username.data, generate_password_hash(rf.password.data))
+            user = User(rf.username.data)
             login_user(user)
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
@@ -164,9 +135,9 @@ def competencies():
     
     if uri:      
         if current_user.is_authenticated():
-            username = current_user.id
-            user = models.getUserProfile(username)            
-            d['registered'] = str(hash(uri)) in user['competencies'].keys()
+            user = User(current_user.id)
+            comps = user.getAllComps()            
+            d['registered'] = str(hash(uri)) in comps.keys()
 
         d['uri'] = uri
         comp = models.getCompetency(uri, objectid=True)
@@ -193,7 +164,7 @@ def competencies():
                 lrresults = json.loads(resp.content)
                 ids = [s['doc_ID'] for s in lrresults['documents']]
                 for d_id in ids:
-                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+                    models.updateCompetencyLR(d['cid'], current_app.config['LR_NODE'] + d_id + '&by_doc_ID=T')
                 updated_comp = models.getCompetency(uri, objectid=True)
                 d['comp'] = updated_comp
 
@@ -205,19 +176,18 @@ def competencies():
 @app.route('/me_competencies')
 @login_required
 def me_competencies():
-    username = current_user.id
-    user = models.getUserProfile(username)
+    user = User(current_user.id)
 
     d = {}
     uri = request.args.get('uri', None)
 
     if uri:      
         d['uri'] = uri
-        comp = models.getCompFromUserProfile(user, uri)
+        comp = user.getComp(uri)
         d['comp'] = comp
         return render_template('me_comp-details.html', **d)
 
-    d['comps'] = models.GetAllCompsFromUserProfile(user)
+    d['comps'] = user.getAllComps()
     return render_template('me_competencies.html', **d)
 
 
@@ -229,10 +199,8 @@ def frameworks():
         uri = request.args.get('uri', None)
         if uri:
             d = {}
-            if current_user.is_authenticated():
-                username = current_user.id
-                user = models.getUserProfile(username)            
-                d['registered'] = str(hash(uri)) in user['compfwks'].keys()
+            if current_user.is_authenticated():         
+                d['registered'] = str(hash(uri)) in User(current_user.id).profile['compfwks'].keys()
 
             d['uri'] = uri
             
@@ -251,7 +219,7 @@ def frameworks():
                             lrresults = json.loads(resp.content)
                             ids = [s['doc_ID'] for s in lrresults['documents']]
                             for d_id in ids:
-                                models.updateCompetencyLR(cid, LR_NODE + d_id + '&by_doc_ID=T')
+                                models.updateCompetencyLR(cid, current_app.config['LR_NODE'] + d_id + '&by_doc_ID=T')
 
             d['fwk'] = models.getCompetencyFramework(uri)
             return render_template('compfwk-details.html', **d)
@@ -274,14 +242,12 @@ def frameworks():
 @app.route('/me_frameworks', methods=["GET"])
 @login_required
 def me_frameworks():
-    username = current_user.id
-    user = models.getUserProfile(username)
-
+    user = User(current_user.id)
     uri = request.args.get('uri', None)
     if uri:
         d = {}
         d['uri'] = uri
-        d['fwk'] = models.getCompfwkFromUserProfile(user, uri)
+        d['fwk'] = user.getCompfwk(uri)
         return render_template('me_compfwk-details.html', **d)
     else:
         abort(404)
@@ -295,10 +261,8 @@ def perfwks():
         uri = request.args.get('uri', None)
         d['error'] = request.args.get('error', None)
         if uri:
-            if current_user.is_authenticated():
-                username = current_user.id
-                user = models.getUserProfile(username)            
-                d['registered'] = str(hash(uri)) in user['perfwks'].keys()
+            if current_user.is_authenticated():           
+                d['registered'] = str(hash(uri)) in User(current_user.id).profile['perfwks'].keys()
 
             d['uri'] = uri
             d['fwk'] = models.getPerformanceFramework(uri)
@@ -321,14 +285,11 @@ def perfwks():
 @app.route('/me_perfwks', methods=["GET"])
 @login_required
 def me_perfwks():
-    username = current_user.id
-    user = models.getUserProfile(username)
-
     uri = request.args.get('uri', None)
     if uri:
         d = {}
         d['uri'] = uri
-        d['fwk'] = models.getPerfwkFromUserProfile(user, uri)
+        d['fwk'] = User(current_user.id).getPerfwk(uri)
         return render_template('me_perfwk-details.html', **d)
     else:
         abort(404)
@@ -337,16 +298,20 @@ def me_perfwks():
 @app.route('/me', methods=["GET"])
 @login_required
 def me():
-    username = current_user.id
-    user = models.getUserProfile(username)
-    user_comps = user['competencies'].values()
-    user_fwks = user['compfwks'].values()
-    user_pfwks = user['perfwks'].values()
+    user = User(current_user.id)
+    user_comps = user.profile['competencies'].values()
+    user_fwks = user.profile['compfwks'].values()
+    user_pfwks = user.profile['perfwks'].values()
 
     # Calculate complete competencies for users and return count
-    completed_comps = sum(1 for c in user_comps if c.get('completed',False))
+    # completed_comps = sum(1 for c in user_comps if c.get('completed',False))
+    bs = []
+    for c in user_comps:
+        if c.get('completed',False):
+            bs.append(1)
+    completed_comps = len(bs)
     started_comps = len(user_comps) - completed_comps   
-    name = user['first_name'] + ' ' + user['last_name']
+    name = user.first_name + ' ' + user.last_name
 
     mozilla_asserts = []
     for perf in user_comps:
@@ -363,19 +328,33 @@ def me():
         mozilla_asserts.append(moz_dict)
 
     return render_template('me.html', comps=user_comps, fwks=user_fwks, pfwks=user_pfwks, completed=completed_comps, started=started_comps, name=name,
-        email=user['email'], mozilla_asserts=mozilla_asserts)
+        email=user.email, mozilla_asserts=mozilla_asserts)
 
 # Add comps/fwks/perfwks to the user
 @app.route('/me/add', methods=["POST"])
 @login_required
 def add_comp():
     # Hashes of the uri of the comp are used to store them in the userprofile object
+    user = User(current_user.id)
     if request.form.get('comp_uri', None):
-        models.addCompToUserProfile(request.form.get('comp_uri', None), current_user.id)
+        user.addComp(request.form.get('comp_uri', None))
     elif request.form.get('fwk_uri', False):
-        models.addFwkToUserProfile(request.form.get('fwk_uri', None), current_user.id)
+        user.addFwk(request.form.get('fwk_uri', None))
     elif request.form.get('perfwk_uri', False):
-        models.addPerFwkToUserProfile(request.form.get('perfwk_uri', None), current_user.id)
+        user.addPerFwk(request.form.get('perfwk_uri', None))
+
+    return redirect(url_for("me"))
+
+@app.route('/me/update', methods=["POST"])
+@login_required
+def update_comp():
+    user = User(current_user.id)
+    if request.form.get('comp_uri', None):
+        user.addComp(request.form.get('comp_uri', None))
+    elif request.form.get('fwk_uri', False):
+        user.addFwk(request.form.get('fwk_uri', None))
+    elif request.form.get('perfwk_uri', False):
+        user.addPerFwk(request.form.get('perfwk_uri', None))
 
     return redirect(url_for("me"))
 
@@ -390,27 +369,22 @@ def load_cc():
 @app.route('/me/settings', methods=["GET"])
 @login_required
 def me_settings():
-    username = current_user.id
-    user = db.userprofiles.find_one({'username':username})
-    user_profiles = user['lrsprofiles']
-    
+    user_profiles = User(current_user.id).profile['lrsprofiles']
     return render_template('mysettings.html', user_profiles=user_profiles)
 
 # Update the LRS endpoints for the user
 @app.route('/me/settings/update_endpoint', methods=["POST"])
 @login_required
 def update_endpoint():
-    username = current_user.id
     # Werkzeug returns immutabledict object when multiple forms are on page. have to copy to get values
     sf = request.form.copy()
-    
     default = False
     if 'default' in sf.keys():
         default = True
 
     # Update profile with form input
-    user = db.userprofiles.find_one({'username':username})
-    for profile in user['lrsprofiles']:
+    user = User(current_user.id)
+    for profile in user.profile['lrsprofiles']:
         if profile['name'] == sf['name']:
             profile['endpoint'] = sf['endpoint']
             profile['username'] = sf['auth']
@@ -420,18 +394,17 @@ def update_endpoint():
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
 
-    db.userprofiles.update({'username':username}, user)
+    user.save()
     return redirect(url_for('me'))
 
 # Add an LRS endpoint to a user profile
 @app.route('/me/settings/add_endpoint', methods=["POST"])
 @login_required
 def add_endpoint():
-    username = current_user.id
     af = request.form.copy()
-    user = db.userprofiles.find_one({'username':username})
+    user = User(current_user.id)
 
-    existing_names = [p['name'] for p in user['lrsprofiles']]
+    existing_names = [p['name'] for p in user.profile['lrsprofiles']]
 
     # Make sure name doesn't exist already
     if not af['newname'] in existing_names:
@@ -448,11 +421,11 @@ def add_endpoint():
         new_prof['default'] = default
 
         if default:
-            for profile in user['lrsprofiles']:
+            for profile in user.profile['lrsprofiles']:
                 profile['default'] = False
 
-        user['lrsprofiles'].append(new_prof)
-        db.userprofiles.update({'username':username}, user)
+        user.profile['lrsprofiles'].append(new_prof)
+        user.save()
     
     return redirect(url_for('me'))
 
@@ -485,36 +458,87 @@ def lr_search():
 def link_lr_comp():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    user = User(current_user.id)
+    roles = user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
-        models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
-    return "Successfully linked competency"
+
+    try:
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "competency", c_uri, c_content)
+    except Exception, e:
+        return "Competency updated but paradata was not sent to LR - " + e.message
+
+    return "Successfully linked competency\n Here is the LR paradata doc_ID:" + doc_id
 
 # Link lr data to comp fwk
 @app.route('/link_lr_cfwk', methods=['POST'])
 def link_lr_cfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    user = User(current_user.id)
+    roles = user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
-        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyFrameworkLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
-    return "Successfully linked competency framework"
+
+    try:
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "competency framework", c_uri, c_content)
+    except Exception, e:
+        return "Competency framework updated but paradata was not sent to LR - " + e.message
+
+    return "Successfully linked competency framework\n Here is the LR paradata doc_ID:" + doc_id
 
 # Linke lr data to per fwk
 @app.route('/link_lr_pfwk', methods=['POST'])
 def link_lr_pfwk():
     lr_uri = request.form['lr_uri']
     c_id = request.form['c_id']
+    lr_title = request.form['lr_title']
+    c_uri = request.form['c_uri']
+    c_content = request.form['c_content']
+
+    user = User(current_user.id)
+    roles = user.roles
+
+    if 'admin' in roles:
+        user_role = 'admin'
+    elif 'teacher' in roles:
+        user_role = 'teacher'
 
     try:
-        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updatePerformanceFrameworkLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
-    return "Successfully linked performance framework"
+
+    try:
+        doc_id = models.sendLRParadata(lr_uri, lr_title, user_role, "performance framework", c_uri, c_content)
+    except Exception, e:
+        return "Performance framework updated but paradata was not sent to LR - " + e.message
+
+    return "Successfully linked performance framework\n Here is the LR paradata doc_ID:" + doc_id
 
 # Admin reset button to clear entire db
 @app.route('/admin/reset', methods=["POST"])
@@ -584,11 +608,11 @@ def tetris_badge(perfwk_id, component_id, perf_id):
     if '.png' in perf_id:
         filename = ':'.join([perfwk_id, component_id, perf_id])
         try:
-            badge = fs.get_last_version(filename)
+            badge = models.fsGetLastVersion(filename)
         except Exception, e:
             abort(404)
 
-        badge_file = fs.get(badge._file['_id'])
+        badge_file = models.fsGetByID(badge._file['_id'])
         response = make_response(badge_file.read())
         response.mimetype = badge_file.content_type
         return response
