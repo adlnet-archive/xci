@@ -13,9 +13,15 @@ DEFAULT_PROFILE = {
     "password" : "1234"
 }
 
-LR_PUBLISH_NAME = ""
-LR_PUBLISH_PASSWORD = ""
+ALLOWED_BADGE_EXTENSIONS = set(['png'])
+BADGE_UPLOAD_FOLDER = 'static/badgeclass'
+
+LR_PUBLISH_NAME = "lou.wolford.ctr@adlnet.gov"
+LR_PUBLISH_PASSWORD = "$c0rmR0ck$"
 LR_PUBLISH_ENDPOINT = "https://sandbox.learningregistry.org/publish"
+
+# lr uri to obtain docs
+LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
 
 HEADERS = {        
     'Authorization': DEFAULT_PROFILE['auth'],

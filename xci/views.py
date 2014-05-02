@@ -3,38 +3,22 @@ import json
 import models
 import requests
 import os
-import gridfs
-from xci import app, competency, performance
-from xci.competency import MBCompetency as mbc
-from functools import wraps
-from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
-from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
-from models import User
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
-from pymongo import MongoClient
-from werkzeug.security import generate_password_hash
-from werkzeug import secure_filename
 from urlparse import urlparse
 from itertools import imap
 from operator import itemgetter
+from functools import wraps
+from xci import app, competency, performance
+from xci.competency import MBCompetency as mbc
+from models import User
+from flask import render_template, redirect, flash, url_for, request, make_response, Response, jsonify, abort, send_file
+from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, SearchForm, CompetencyEditForm
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
+from werkzeug.security import generate_password_hash
+from werkzeug import secure_filename
 
 # Init login_manager
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# Init db
-mongo = MongoClient()
-db = mongo.xci
-fs = gridfs.GridFS(db)
-
-# lr uri to obtain docs
-LR_NODE = "http://node01.public.learningregistry.net/obtain?request_ID="
-
-app.config['UPLOAD_FOLDER'] = 'static/badgeclass'
-app.config['ALLOWED_EXTENSIONS'] = set(['png'])
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 @app.route('/badge_upload', methods=['POST'])
 def badge_upload():
@@ -45,7 +29,7 @@ def badge_upload():
     componentid = request.form['componentid']
 
     # Make sure the file name is allowed and secure (just png for now)
-    if badge and allowed_file(secure_filename(badge.filename)):
+    if badge and models.allowed_file(secure_filename(badge.filename)):
         parts = urlparse(url)
         path_parts = parts.path.split('/')
 
@@ -53,7 +37,7 @@ def badge_upload():
         perflvl_id = os.path.splitext(path_parts[5])[0]
         grid_name = ':'.join(path_parts[3:6])
         try:
-            saved = fs.put(badge, contentType=badge.content_type, filename=grid_name)
+            saved = models.fsSaveBadgeFile(badge, grid_name)
         except Exception, e:
             return redirect(url_for('perfwks', uri=uri, error=e.message))
         else:
@@ -189,7 +173,7 @@ def competencies():
                 lrresults = json.loads(resp.content)
                 ids = [s['doc_ID'] for s in lrresults['documents']]
                 for d_id in ids:
-                    models.updateCompetencyLR(d['cid'], LR_NODE + d_id + '&by_doc_ID=T')
+                    models.updateCompetencyLR(d['cid'], current_app.config['LR_NODE'] + d_id + '&by_doc_ID=T')
                 updated_comp = models.getCompetency(uri, objectid=True)
                 d['comp'] = updated_comp
 
@@ -244,7 +228,7 @@ def frameworks():
                             lrresults = json.loads(resp.content)
                             ids = [s['doc_ID'] for s in lrresults['documents']]
                             for d_id in ids:
-                                models.updateCompetencyLR(cid, LR_NODE + d_id + '&by_doc_ID=T')
+                                models.updateCompetencyLR(cid, current_app.config['LR_NODE'] + d_id + '&by_doc_ID=T')
 
             d['fwk'] = models.getCompetencyFramework(uri)
             return render_template('compfwk-details.html', **d)
@@ -327,9 +311,6 @@ def me():
     user_comps = user.profile['competencies'].values()
     user_fwks = user.profile['compfwks'].values()
     user_pfwks = user.profile['perfwks'].values()
-
-    # import pdb
-    # pdb.set_trace()
 
     # Calculate complete competencies for users and return count
     # completed_comps = sum(1 for c in user_comps if c.get('completed',False))
@@ -490,7 +471,8 @@ def link_lr_comp():
     c_uri = request.form['c_uri']
     c_content = request.form['c_content']
 
-    roles = current_user.roles
+    user = User(current_user.id)
+    roles = user.roles
 
     if 'admin' in roles:
         user_role = 'admin'
@@ -498,7 +480,7 @@ def link_lr_comp():
         user_role = 'teacher'
 
     try:
-        models.updateCompetencyLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
 
@@ -518,7 +500,8 @@ def link_lr_cfwk():
     c_uri = request.form['c_uri']
     c_content = request.form['c_content']
 
-    roles = current_user.roles
+    user = User(current_user.id)
+    roles = user.roles
 
     if 'admin' in roles:
         user_role = 'admin'
@@ -526,7 +509,7 @@ def link_lr_cfwk():
         user_role = 'teacher'
 
     try:
-        models.updateCompetencyFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updateCompetencyFrameworkLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
 
@@ -546,7 +529,8 @@ def link_lr_pfwk():
     c_uri = request.form['c_uri']
     c_content = request.form['c_content']
 
-    roles = current_user.roles
+    user = User(current_user.id)
+    roles = user.roles
 
     if 'admin' in roles:
         user_role = 'admin'
@@ -554,7 +538,7 @@ def link_lr_pfwk():
         user_role = 'teacher'
 
     try:
-        models.updatePerformanceFrameworkLR(c_id, LR_NODE + lr_uri)
+        models.updatePerformanceFrameworkLR(c_id, current_app.config['LR_NODE'] + lr_uri)
     except Exception, e:
         return e.message
 
@@ -633,11 +617,11 @@ def tetris_badge(perfwk_id, component_id, perf_id):
     if '.png' in perf_id:
         filename = ':'.join([perfwk_id, component_id, perf_id])
         try:
-            badge = fs.get_last_version(filename)
+            badge = models.fsGetLastVersion(filename)
         except Exception, e:
             abort(404)
 
-        badge_file = fs.get(badge._file['_id'])
+        badge_file = models.fsGetByID(badge._file['_id'])
         response = make_response(badge_file.read())
         response.mimetype = badge_file.content_type
         return response

@@ -1,5 +1,6 @@
 import json
 import models
+from models import User
 import requests
 import urllib
 from flask import current_app
@@ -21,13 +22,13 @@ class PerfEval(object):
 
     def _config(self):
         self.fwkobj = models.getPerformanceFramework(self.uri)
-        self.userobj = models.getUserProfile(self.username)
-        self.actor = '{"mbox": "mailto:%s"}' % self.userobj['email']
+        self.userobj = User(self.username)
+        self.actor = '{"mbox": "mailto:%s"}' % self.userobj.email
         # tetris doesn't use expapi
         self.verb = 'http://adlnet.gov/xapi/verbs/completed'
         self.query_string = '?agent={0}&verb={1}&activity={2}&related_activities={3}'
-        if self.userobj['lrsprofiles']:
-            self.profiles = self.userobj['lrsprofiles']
+        if self.userobj.profile['lrsprofiles']:
+            self.profiles = self.userobj.profile['lrsprofiles']
         else:
             self.profiles = [current_app.config['DEFAULT_PROFILE']]
 
@@ -132,7 +133,7 @@ class TetrisPerformanceEval(PerfEval):
         prof = self.getDefaultUserProfile()
         url = prof['endpoint'] + "statements"
         data = {
-            'actor': models.getFullAgent(self.userobj),
+            'actor': self.userobj.getFullAgent(),
             'verb': {'id': 'http://adlnet.gov/expapi/verbs/achieved', 'display':{'en-US': 'achieved'}},
             'object':{'id':"%s#%s" % (compuri, plvl['id']), 
                       'definition':{
@@ -162,14 +163,15 @@ class TetrisPerformanceEval(PerfEval):
                 return c['entry']
 
     def getUserTetrisCompPerformances(self, compuri):
-        c = self.userobj['competencies'].get(str(hash(compuri)), None)
+        c = self.userobj.profile['competencies'].get(str(hash(compuri)), None)
         if c:
             return c.get('performances', [])
 
     def saveUserTetrisCompPerformances(self, compuri, perfs):
-        c = self.userobj['competencies'].get(str(hash(compuri)), None)
+        c = self.userobj.profile['competencies'].get(str(hash(compuri)), None)
         if c:
             c['performances'] = perfs
-            models.saveUserProfile(self.userobj, self.username)
-            return self.userobj
+            # models.saveUserProfile(self.userobj, self.username)
+            self.userobj.save()
+            return self.userobj.profile
         return None

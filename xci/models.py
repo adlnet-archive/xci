@@ -5,6 +5,7 @@ import badgebakery
 import os
 import base64
 import requests
+import gridfs
 from requests.auth import HTTPBasicAuth
 import json
 from bson.objectid import ObjectId
@@ -16,9 +17,24 @@ from werkzeug.security import generate_password_hash
 # Init db
 mongo = MongoClient()
 db = mongo.xci
+fs = gridfs.GridFS(db)
 
+# Exception class for the LR
 class LRException(Exception):
     pass
+
+# Badge and assertion functions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in current_app.config['ALLOWED_BADGE_EXTENSIONS']
+
+def fsSaveBadgeFile(badge, grid_name):
+    return fs.put(badge, contentType=badge.content_type, filename=grid_name)
+
+def fsGetLastVersion(filename):
+    return fs.get_last_version(filename)
+
+def fsGetByID(_id):
+    return fs.get(_id)
 
 def getBadgeIdByName(name):
     return str(db.badgeclass.find_one({'name': name})['_id'])
@@ -97,6 +113,10 @@ def createAssertion(userprof, uri):
     
                 # # Once baked image is created, store in mongo
                 # storeBakedBadges()
+
+# Perform actual update of profile
+def updateUserProfile(profile, userid):
+    db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 
 
@@ -232,85 +252,38 @@ class UserProfile():
             self._profile = profile
         db.userprofiles.update({'username':self.userid}, self._profile, manipulate=False)
 
-# def getPerfwkFromUserProfile(prof, uri):
-#     return prof['perfwks'][str(hash(uri))]
 
-# def getCompfwkFromUserProfile(prof, uri):
-#     return prof['compfwks'][str(hash(uri))]
 
-# def getCompFromUserProfile(prof, uri):
-#     return prof['competencies'][str(hash(uri))]
 
-# def GetAllCompsFromUserProfile(prof):
-#     return prof['competencies']
+# LR functions
+# Update the comp with new LR data-calls other LR updates
+def updateCompetencyLR(c_id,lr_uri):
+    if isinstance(c_id, basestring):
+        c_id = ObjectId(c_id)
 
-# # Update or insert user profile if id is given
-# def saveUserProfile(profile, userid=None):
-#     if userid:
-#         updateUserProfile(profile, userid)
-#     else:
-#         db.userprofiles.insert(profile)
+    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserCompLR(c_id, lr_uri)
+    updateCompInFwksLR(c_id, lr_uri)
 
-# # Perform actual update of profile
-# def updateUserProfile(profile, userid):
-#     db.userprofiles.update({'username':userid}, profile, manipulate=False)
+# Update the comp in all users
+def updateUserCompLR(c_id, lr_uri):
+    if not isinstance(c_id, basestring):
+        c_id = str(c_id)
 
-# Given a URI and Userid, store a copy of the comp in the user profile
-# def addCompToUserProfile(uri, userid, userprof=None):
-#     if not userprof:
-#         userprof = getUserProfile(userid)
-#     h = str(hash(uri))
-#     if not userprof.get('competencies', False):
-#         userprof['competencies'] = {}
-#     if uri and h not in userprof['competencies']:
-#         comp = getCompetency(uri)
-#         userprof['competencies'][h] = comp
-#         saveUserProfile(userprof, userid)
+    h = str(hash(c_id))
+    import pdb
+    pdb.set_trace()
+    set_field = 'competencies.' + h
+    db.userprofiles.update({set_field:{'$exists': True}}, {'$addToSet':{set_field+'.lr_data': lr_uri}}, multi=True)
 
-# Given a URI and Userid, store a copy of the framework and comps in user profile
-# def addFwkToUserProfile(uri, userid):
+# Updates all comp fwks that contain that comp
+def updateCompInFwksLR(c_id, lr_uri):
+    # Remove this field in comp before updating the fwk
+    db.compfwk.update({'competencies':{'$elemMatch':{'uri':c_id}}}, {'$set': {'competencies.$': comp}}, multi=True)
+    updateUserFwkByComp(comp)
 
-#     import pdb
-#     pdb.set_trace()
 
-#     userprof = getUserProfile(userid)
-#     fh = str(hash(uri))
-#     if not userprof.get('compfwks', False):
-#         userprof['compfwks'] = {}
-#     if uri and fh not in userprof['compfwks']:
-#         fwk = getCompetencyFramework(uri)
-#         userprof['compfwks'][fh] = fwk
-#         for c in fwk['competencies']:
-#             addCompToUserProfile(c['uri'], userid, userprof)
-#         saveUserProfile(userprof, userid)
 
-# Given URI and User id, store performance fwk, comp fwk, and comps in user profile
-# def addPerFwkToUserProfile(uri, userid):
-#     userprof = getUserProfile(userid)
-#     fh = str(hash(uri))
-#     if not userprof.get('perfwks', False):
-#         userprof['perfwks'] = {}
-#     if uri and fh not in userprof['perfwks']:
-#         fwk = getPerformanceFramework(uri)
-#         userprof['perfwks'][fh] = fwk
-#         # find the competency object uri for each component and add it to the user's list of competencies
-#         for curi in (x['entry'] for b in fwk.get('components', []) for x in b.get('competencies', []) if x['type'] != "http://ns.medbiq.org/competencyframework/v1/"):
-#             addCompToUserProfile(curi, userid, userprof)
-#         saveUserProfile(userprof, userid)
-
-# Use on search comp page-searches for search keyword in comp titles
-def searchComps(key):
-    regx = re.compile(key, re.IGNORECASE)
-    return db.competency.find({"title": regx})
-
-# Update or insert competency depending if it exists
-def saveCompetency(json_comp):
-    if not json_comp.get('lastmodified', False):
-        json_comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
-    if getCompetency(json_comp['uri']):
-        updateCompetency(json_comp)
-    else:
-        db.competency.insert(json_comp, manipulate=False)
 
 # Updates all comps in fwks that are in the userprofiles
 def updateUserFwkByComp(comp):
@@ -327,28 +300,8 @@ def updateUserFwkByComp(comp):
             set_field = 'compfwks.' + h
             db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
 
-# Updates all comp fwks that contain that comp
-def updateCompInFwks(comp):
-    # Remove this field in comp before updating the fwk
-    db.compfwk.update({'competencies':{'$elemMatch':{'uri':comp['uri']}}}, {'$set': {'competencies.$': comp}}, multi=True)
-    updateUserFwkByComp(comp)
 
-# Update the comp in all users
-def updateUserComp(comp):
-    h = str(hash(comp['uri']))
-    set_field = 'competencies.' + h
-    db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: comp}}, multi=True)
 
-# Update the comp with new LR data-calls other LR updates
-def updateCompetencyLR(c_id,lr_uri):
-    if isinstance(c_id, basestring):
-        c_id = ObjectId(c_id)
-
-    db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
-    comp = db.competency.find({'_id': c_id})[0]
-    del comp['_id']
-    updateUserComp(comp)
-    updateCompInFwks(comp)
 
 def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content): 
     date = datetime.datetime.now(pytz.utc).isoformat()
@@ -412,6 +365,34 @@ def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content):
     else:
         return json.loads(r.content)['document_results'][0]['doc_ID']
 
+# Update all comp fwks
+def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
+    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserFwkById(cfwk_id)
+
+#  Update all per fwks
+def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
+    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserPfwkById(pfwk_id)
+
+
+
+
+
+# General comp/fwk functions
+# Use on search comp page-searches for search keyword in comp titles
+def searchComps(key):
+    regx = re.compile(key, re.IGNORECASE)
+    return db.competency.find({"title": regx})
+
+# Update or insert competency depending if it exists
+def saveCompetency(json_comp):
+    if not json_comp.get('lastmodified', False):
+        json_comp['lastmodified'] = datetime.datetime.now(pytz.utc).isoformat()
+    if getCompetency(json_comp['uri']):
+        updateCompetency(json_comp)
+    else:
+        db.competency.insert(json_comp, manipulate=False)
 
 # Update all comp fwks in the user by id
 def updateUserFwkById(cfwk_id):
@@ -420,22 +401,12 @@ def updateUserFwkById(cfwk_id):
     set_field = 'compfwks.' + h
     db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
 
-# Update all comp fwks
-def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
-    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserFwkById(cfwk_id)
-
 # Update all per fwks in the user by id
 def updateUserPfwkById(pfwk_id):
     fwk = db.perfwk.find_one({'_id': ObjectId(pfwk_id)})
     h = str(hash(fwk['uri']))
     set_field = 'perfwks.' + h
     db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field:fwk}}, multi=True)
-
-#  Update all per fwks
-def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
-    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserPfwkById(pfwk_id)
 
 # Update the competency by uri
 def updateCompetency(json_comp):
@@ -502,9 +473,9 @@ def savePerformanceFramework(json_fwk):
                 badgeclass = {
                     "name": p['id'],
                     "description": p['description'],
-                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
+                    "image": '%s/%s/%s/%s/%s.png' % (current_app.config['DOMAIN_NAME'], current_app.config['BADGE_UPLOAD_FOLDER'], json_fwk['uuidurl'], c['id'], p['id']),
                     "criteria": json_fwk['uri'] + '.xml',
-                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['UPLOAD_FOLDER']),
+                    "issuer": '%s/%s/issuer' % (current_app.config['DOMAIN_NAME'], current_app.config['BADGE_UPLOAD_FOLDER']),
                     'uuidurl': json_fwk['uuidurl']
                 }
                 db.badgeclass.insert(badgeclass)
@@ -535,6 +506,10 @@ def getPerformanceFramework(uri, objectid=False):
 def findPerformanceFrameworks(d=None):
     return [x for x in db.perfwk.find(d)]
 
+
+
+
+# Admin reset functions
 # Drop all of the comp collections
 def dropCompCollections():
     db.drop_collection('competency')
