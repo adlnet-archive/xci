@@ -506,7 +506,11 @@ def searchComps(key):
 
 
 
+def checkUsernameExists(username):
+    return db.userprofiles.find_one({'username':username}) is not None
 
+def checkEmailExists(email):
+    return db.userprofiles.find_one({'email':email}) is not None
 
 # Admin reset functions
 # Drop all of the comp collections

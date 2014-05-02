@@ -5,6 +5,7 @@ from wtforms.validators import DataRequired
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash
 from rfc3987 import parse
+import models
 
 # Set db
 mongo = MongoClient()
@@ -28,12 +29,13 @@ class LoginForm(Form):
         if not rv:
             return False
 
-        user = db.userprofiles.find_one({'username':self.username.data})
-        if user is None:
+        if not models.checkUsernameExists(self.username.data):
             self.username.errors.append('Unknown username')
             return False
 
-        if not check_password_hash(user['password'],self.password.data):
+        user = models.User(self.username.data)
+
+        if not check_password_hash(user.password,self.password.data):
             self.password.errors.append('Invalid password')
             return False
 
@@ -58,17 +60,25 @@ class RegistrationForm(Form):
         if not rv:
             return False
 
-        user = db.userprofiles.find_one({'username':self.username.data})
-        if user:
+        if models.checkUsernameExists(self.username.data):
             self.username.errors.append('Username already exists')
             return False
 
-        user = db.userprofiles.find_one({'email':self.email.data})
-        if user:
+        if models.checkEmailExists(self.email.data):
             self.email.errors.append('Email already exists')
             return False
 
-        self.user = user
+
+        role = self.role.data
+        if role == 'admin':
+            role = ['admin', 'teacher', 'student']
+        elif role == 'teacher':
+            role = ['teacher', 'student']
+        else:
+            role = ['student']
+
+        self.user = models.User(self.username.data, password=self.password.data, email=self.email.data,
+            first_name=self.first_name.data, last_name=self.last_name.data, roles=role)
         return True 
 
 class FrameworksForm(Form):

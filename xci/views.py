@@ -120,16 +120,7 @@ def sign_up():
         # Add necessary roles as needed
         rf = RegistrationForm(request.form)
         if rf.validate_on_submit():
-            role = rf.role.data
-            if role == 'admin':
-                role = ['admin', 'teacher', 'student']
-            elif role == 'teacher':
-                role = ['teacher', 'student']
-            else:
-                role = ['student']
-
-            user = User(rf.username.data, generate_password_hash(rf.password.data),
-                        rf.email.data, rf.first_name.data, rf.last_name.data, role)
+            user = User(rf.username.data)
             login_user(user)
             return redirect(url_for('index'))
         return render_template('sign_up.html', signup_form=rf, hide=True)
