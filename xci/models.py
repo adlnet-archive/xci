@@ -119,9 +119,6 @@ def updateUserProfile(profile, userid):
     db.userprofiles.update({'username':userid}, profile, manipulate=False)
 
 
-
-
-
 # User class to montor who is logged in - inherits from userMixin class from flask_mongo
 class User(UserMixin):
     def __init__(self, userid, password=None, email=None, first_name=None, last_name=None, roles=None):
@@ -194,14 +191,11 @@ class User(UserMixin):
             self.profile['competencies'] = {}
         if uri and h not in self.profile['competencies']:
             comp = getCompetency(uri)
-            self.profile['competencies'][h] = comp
+            if comp:
+                self.profile['competencies'][h] = comp
             self.save()
 
     def addFwk(self, uri):
-        # we'll need that.. this one's broked
-        # import pdb
-        # pdb.set_trace()
-
         fh = str(hash(uri))
         if not self.profile.get('compfwks', False):
             self.profile['compfwks'] = {}
@@ -209,7 +203,10 @@ class User(UserMixin):
             fwk = getCompetencyFramework(uri)
             self.profile['compfwks'][fh] = fwk
             for c in fwk['competencies']:
-                self.addComp(c['uri'])
+                if c['type'] == "http://ns.medbiq.org/competencyframework/v1/":
+                    self.addFwk(c['uri'])
+                else:
+                    self.addComp(c['uri'])
             self.save()
 
     def addPerFwk(self, uri):
@@ -256,37 +253,41 @@ class UserProfile():
 
 
 # LR functions
+# Update all comp fwks
+def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
+    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserFwkById(cfwk_id)
+
+#  Update all per fwks
+def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
+    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
+    updateUserPfwkById(pfwk_id)
+
 # Update the comp with new LR data-calls other LR updates
 def updateCompetencyLR(c_id,lr_uri):
     if isinstance(c_id, basestring):
         c_id = ObjectId(c_id)
 
     db.competency.update({'_id': c_id}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserCompLR(c_id, lr_uri)
-    updateCompInFwksLR(c_id, lr_uri)
+    comp_uri = db.competency.find_one({'_id': c_id})['uri']
+    updateUserCompLR(comp_uri, lr_uri)
+    updateCompInFwksLR(comp_uri, lr_uri)
 
 # Update the comp in all users
-def updateUserCompLR(c_id, lr_uri):
-    if not isinstance(c_id, basestring):
-        c_id = str(c_id)
-
-    h = str(hash(c_id))
-    import pdb
-    pdb.set_trace()
+def updateUserCompLR(c_uri, lr_uri):
+    h = str(hash(c_uri))
     set_field = 'competencies.' + h
     db.userprofiles.update({set_field:{'$exists': True}}, {'$addToSet':{set_field+'.lr_data': lr_uri}}, multi=True)
 
 # Updates all comp fwks that contain that comp
-def updateCompInFwksLR(c_id, lr_uri):
+def updateCompInFwksLR(c_uri, lr_uri):
     # Remove this field in comp before updating the fwk
-    db.compfwk.update({'competencies':{'$elemMatch':{'uri':c_id}}}, {'$set': {'competencies.$': comp}}, multi=True)
-    updateUserFwkByComp(comp)
-
-
-
+    db.compfwk.update({'competencies':{'$elemMatch':{'uri':c_uri}}}, {'$addToSet': {'competencies.$.lr_data': lr_uri }}, multi=True)
+    updateUserFwkByURILR(c_uri, lr_uri)
 
 # Updates all comps in fwks that are in the userprofiles
-def updateUserFwkByComp(comp):
+def updateUserFwkByURILR(c_uri, lr_uri):
+    comp = db.competency.find_one({'uri': c_uri})
     if not comp['type'] == 'commoncoreobject':
         try:
             parents = comp['relations']['childof']
@@ -297,11 +298,8 @@ def updateUserFwkByComp(comp):
         for uri in parents:
             fwk = db.compfwk.find({'uri': uri})[0]
             h = str(hash(uri))
-            set_field = 'compfwks.' + h
-            db.userprofiles.update({set_field:{'$exists': True}}, {'$set':{set_field: fwk}}, multi=True)
-
-
-
+            set_field = 'compfwks.' + h + '.competencies'
+            db.userprofiles.update({set_field:{'$elemMatch':{'uri':c_uri}}}, {'$addToSet':{set_field + '.$.lr_data': lr_uri}}, multi=True)
 
 def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content): 
     date = datetime.datetime.now(pytz.utc).isoformat()
@@ -365,15 +363,9 @@ def sendLRParadata(lr_uri, lr_title, user_role, c_type, c_uri, c_content):
     else:
         return json.loads(r.content)['document_results'][0]['doc_ID']
 
-# Update all comp fwks
-def updateCompetencyFrameworkLR(cfwk_id, lr_uri):
-    db.compfwk.update({'_id': ObjectId(cfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserFwkById(cfwk_id)
 
-#  Update all per fwks
-def updatePerformanceFrameworkLR(pfwk_id, lr_uri):
-    db.perfwk.update({'_id': ObjectId(pfwk_id)}, {'$addToSet':{'lr_data':lr_uri}})
-    updateUserPfwkById(pfwk_id)
+
+
 
 
 
@@ -505,6 +497,13 @@ def getPerformanceFramework(uri, objectid=False):
 # Return per fwk based on search criteria
 def findPerformanceFrameworks(d=None):
     return [x for x in db.perfwk.find(d)]
+
+# Use on search comp page-searches for search keyword in comp titles
+def searchComps(key):
+    regx = re.compile(key, re.IGNORECASE)
+    return db.competency.find({"title": regx})
+
+
 
 
 
