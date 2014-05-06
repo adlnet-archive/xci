@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="jumbotron">
+	<div class="container">
+		<h2>Results</h2>
+    	<p> Thanks for taking the quiz!! You scored {{score}} out of 5</p>
+        {% if score > 3 %}
+    	<p style="color:green">Congratulations! You passed the quiz!</p>
+        {% else %}
+    	<p style="color:red">Sorry, you failed the quiz. Study harder next time</p>
+        {% end %}
+        {% for lrs in lrs_list %}
+        {% if lrs.status != 200 %}
+        <p>Something went wrong with POSTing the quiz results to {{ lrs.name }}</p>
+        <p>{{ lrs.status }} - {{ lrs.content }}</p>
+        {% else %}
+		<div class="panel-group" id="accordion">
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" id="sen1">{{ lrs.sens[0] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseOne" class="panel-collapse collapse in">
+		      <div class="panel-body" id="st1">
+		      {{ lrs.stmts[0] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" id="sen2">{{ lrs.sens[1] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseTwo" class="panel-collapse collapse">
+		      <div class="panel-body" id="st2">
+		      {{ lrs.stmts[1] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree" id="sen3">{{ lrs.sens[2] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseThree" class="panel-collapse collapse">
+		      <div class="panel-body" id="st3">
+		      {{ lrs.stmts[2] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseFour" id="sen4">{{ lrs.sens[3] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseFour" class="panel-collapse collapse">
+		      <div class="panel-body" id="st4">
+		      {{ lrs.stmts[3] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseFive" id="sen5">{{ lrs.sens[4] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseFive" class="panel-collapse collapse">
+		      <div class="panel-body" id="st5">
+		      {{ lrs.stmts[4] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseSix" id="sen6">{{ lrs.sens[5] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseSix" class="panel-collapse collapse">
+		      <div class="panel-body" id="st6">
+		      {{ lrs.stmts[5] }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="#accordion" href="#collapseSeven" id="sen7">{{ lrs.sens[6] }}</a>
+		      </h4>
+		    </div>
+		    <div id="collapseSeven" class="panel-collapse collapse">
+		      <div class="panel-body" id="st7">
+		      {{ lrs.stmts[6] }}				        
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		{% endif %}
+		{% endfor %}
+	</div>
+{% endblock %}

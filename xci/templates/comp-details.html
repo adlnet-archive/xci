@@ -18,6 +18,9 @@
         {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
              |  <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
         {% endif %}
+        {% if not 'quiz' in comp %}
+        <a href="{{ url_for('add_quiz_to_comp', objid=cid) }}" class="btn btn-primary" role="button">Create Quiz</a>
+        {% endif %}
     {% endif %}
 </p>
 <div class="col-xs-12">
