@@ -3,6 +3,7 @@ import json
 import models
 import requests
 import os
+import urllib
 from urlparse import urlparse
 from itertools import imap
 from operator import itemgetter
@@ -184,8 +185,6 @@ def me_competencies():
     if uri:      
         d['uri'] = uri
         comp = user.getComp(uri)
-        import pdb
-        pdb.set_trace()
         d['comp'] = comp
         return render_template('me_comp-details.html', **d)
 
@@ -391,7 +390,7 @@ def update_endpoint():
             profile['endpoint'] = sf['endpoint']
             profile['username'] = sf['auth']
             profile['password'] = sf['password']
-            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['auth'], profile['password']))
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['username'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -616,15 +615,15 @@ def quiz():
         responses = []
 
         for x in range(1,6):
-            questions.append(request.forms.get('questionasked' + str(x)))
-            answers.append(request.forms.get('answer' + str(x)))
-            types.append(request.forms.get('type' + str(x)))
-            responses.append(request.forms.get('question' + str(x)))
+            questions.append(request.form.get('questionasked' + str(x)))
+            answers.append(request.form.get('answer' + str(x)))
+            types.append(request.form.get('type' + str(x)))
+            responses.append(request.form.get('question' + str(x)))
 
         actor = user.getFullAgent()
         actor_name = "%s %s" % (user.first_name, user.last_name)
-        quiz_name = "adl_xci:" % urllib.quote_plus(comp.title)
-        display_name = comp.title + ' quiz'
+        quiz_name = "adl_xci:%s" % urllib.quote_plus(comp['title'])
+        display_name = comp['title'] + ' quiz'
        
         wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name)
         score = 5 - wrong
@@ -638,14 +637,15 @@ def quiz():
                     'X-Experience-API-Version': '1.0.0'
             }
 
-            post_resp = requests.post(prof['endpoint'], data=json.dumps(data), headers=headers, verify=False)
+            post_resp = requests.post(prof['endpoint'] + "statements", data=json.dumps(data), headers=headers, verify=False)
             lrs_result_info['status'] = post_resp.status_code
             lrs_result_info['content'] = post_resp.content
 
-            lrs_result_info['stmts'], lrs_result_info['sens'] = models.retrieve_statements(status, content, prof['endpoint'], headers)    
+            lrs_result_info['stmts'], lrs_result_info['sens'] = models.retrieve_statements(lrs_result_info['status'],
+                lrs_result_info['content'], prof['endpoint'] + "statements", headers)    
             lrs_list.append(lrs_result_info)
 
-        return template('quiz_results.html', title=comp['title'], uri=comp['uri'], score=score, lrs_list=lrs_list)
+        return render_template('quiz_results.html', title=comp['title'], uri=comp['uri'], score=score, lrs_list=lrs_list)
 
 # Search all competencies added to system right now
 @app.route('/compsearch', methods=['GET', 'POST'])

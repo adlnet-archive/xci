@@ -169,7 +169,8 @@ class User(UserMixin):
     def getFullAgent(self):
         return {
             "mbox" : "mailto:%s" % self.profile['email'],
-            "name" : "%s %s" % (self.profile['first_name'], self.profile['last_name'])
+            "name" : "%s %s" % (self.profile['first_name'], self.profile['last_name']),
+            "objectType": "Agent"
         }
 
     def getComp(self, uri):
@@ -576,7 +577,7 @@ def retrieve_statements(status, post_content, endpoint, headers):
 def get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name):
     data = [
             {
-                'actor': {'mbox': actor, 'name': actor_name},
+                'actor': actor,
                 'verb': {'id': 'http://adlnet.gov/expapi/verbs/attempted', 'display':{'en-US': 'attempted'}},
                 'object':{'id':quiz_name,
                     'definition':{'name':{'en-US':display_name}}}
@@ -585,16 +586,16 @@ def get_result_statements(responses, answers, types, questions, actor, actor_nam
 
     for x in range(0,5):
         data.append({
-            'actor': {'mbox': actor, 'name': actor_name},
+            'actor': actor,
             'verb': {'id': 'http://adlnet.gov/expapi/verbs/answered', 'display':{'en-US': 'answered'}},
-            'object':{'id':quiz_name + '_question1', 'definition':{'name':{'en-US':display_name + ' question1'}, 'description':{'en-US':questions[x]}}}, 
+            'object':{'id':quiz_name + '_question' + str(x+1), 'definition':{'name':{'en-US':display_name + ' question' + str(x+1)}, 'description':{'en-US':questions[x]}}}, 
             'context':{'contextActivities':{'parent':[{'id': quiz_name}]}},
             'result':{'success': True, 'response': responses[x],'extensions': {'answer:correct_answer': answers[x]}}
             })
 
     wrong, data = grade_results(types, answers, responses, data)
     data.append({
-                'actor': {'mbox': actor, 'name': actor_name},
+                'actor': actor,
                 'verb': {'id': 'http://adlnet.gov/expapi/verbs/passed', 'display':{'en-US': 'passed'}},
                 'object':{'id':quiz_name, 'definition':{'name':{'en-US':display_name}}},
                 'result':{'score':{'min': 0, 'max': 5, 'raw': 5 - wrong}}
