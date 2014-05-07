@@ -176,14 +176,34 @@ class User(UserMixin):
     def getComp(self, uri):
         return self.profile['competencies'][str(hash(uri))]
 
+    def getCompArray(self):
+        return self.profile['competencies'].values()
+
+    def getAllComps(self):
+        return self.profile['competencies']
+
+    def updateComp(self, json_comp):
+        self.profile['competencies'][str(hash(json_comp['uri']))] = json_comp
+        self.save()
+        print 'from update comp:: %s' % self.profile['competencies'][str(hash(json_comp['uri']))]
+
+    # def getIncompleteComps(self):
+    #     return db.
+    
     def getCompfwk(self, uri):
         return self.profile['compfwks'][str(hash(uri))]
+
+    def updateFwk(self, json_comp):
+        self.profile['compfwks'][str(hash(json_comp['uri']))] = json_comp
+        self.save()
+        print 'from update fwk:: %s' % self.profile['compfwks'][str(hash(json_comp['uri']))]
+
+    def getCompfwkArray(self):
+        return self.profile['compfwks'].values()
 
     def getPerfwk(self, uri):
         return self.profile['perfwks'][str(hash(uri))]
 
-    def getAllComps(self):
-        return self.profile['competencies']
 
     # Given a URI and Userid, store a copy of the comp in the user profile
     def addComp(self, uri):
