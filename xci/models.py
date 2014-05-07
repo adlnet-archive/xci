@@ -175,14 +175,24 @@ class User(UserMixin):
     def getComp(self, uri):
         return self.profile['competencies'][str(hash(uri))]
 
+    def getCompArray(self):
+        return self.profile['competencies'].values()
+
+    def getAllComps(self):
+        return self.profile['competencies']
+
+    # def getIncompleteComps(self):
+    #     return db.
+    
     def getCompfwk(self, uri):
         return self.profile['compfwks'][str(hash(uri))]
+
+    def getCompfwkArray(self):
+        return self.profile['compfwks'].values()
 
     def getPerfwk(self, uri):
         return self.profile['perfwks'][str(hash(uri))]
 
-    def getAllComps(self):
-        return self.profile['competencies']
 
     # Given a URI and Userid, store a copy of the comp in the user profile
     def addComp(self, uri):
