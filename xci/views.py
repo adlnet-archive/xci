@@ -15,6 +15,7 @@ from forms import LoginForm, RegistrationForm, FrameworksForm, SettingsForm, Sea
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, current_app
 from werkzeug.security import generate_password_hash
 from werkzeug import secure_filename
+from xci.competency.evaluation import Evaluate, NoLRSConfigured
 
 # Init login_manager
 login_manager = LoginManager()
@@ -299,6 +300,10 @@ def me_perfwks():
 @login_required
 def me():
     user = User(current_user.id)
+    try:
+        ev = Evaluate(User("tom")).check_all()
+    except NoLRSConfigured:
+        pass
     user_comps = user.profile['competencies'].values()
     user_fwks = user.profile['compfwks'].values()
     user_pfwks = user.profile['perfwks'].values()

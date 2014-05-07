@@ -5,13 +5,67 @@ class Evaluate(object):
     def __init__(self, user):
         super(Evaluate, self).__init__()
         self.user = user
+        self.xapi = XAPIWrapper(user.profile.get('lrsprofiles', None))
     
     def check_all(self):
-        comps = user.getCompArray()
-        compfwks = user.getCompfwkArray()
+        comps = self.user.getCompArray()
+        for c in comps:
+            self.check_comp(c['uri'], update=True)
+        
+        compfwks = self.user.getCompfwkArray()
+        for cf in compfwks:
+            self.check_fwk(cf['uri'], update=True)
 
-    def check_one(self, uri, force=False):
-        pass
+    def check_comp(self, uri, force=False, update=False):
+        if update:
+            comp = self.user.getComp(uri)
+            if not comp:
+                self.user.addComp(uri)
+                comp = self.user.getComp(uri)
+        if not force:
+            if self.user.getComp(uri).get('completed', False):
+                return True
+        results = self.xapi.getstatements(
+            agent=self.user.email, 
+            verb='http://adlnet.gov/expapi/verbs/passed',
+            activity=uri, related_activities=True)
+        
+        if results[0]:
+            stmts = results[1].get('statements', [])
+            if stmts:
+                if update:
+                    comp['completed'] = True
+                    self.user.updateComp(comp)
+                return True
+        return False
+
+    def check_fwk(self, uri, force=False, update=False):
+        fwk = self.user.getCompfwk(uri)
+        if update:
+            if not fwk:
+                self.user.addFwk(uri)
+                fwk = self.user.getCompfwk(uri)
+            else:
+                # fwk has to exist, if not , fail
+                return False
+
+        if not force:
+            if self.user.getCompfwk(uri).get('completed', False):
+                return True
+        results = []
+        for c in fwk.get('competencies', []):
+            if c['type'] == 'http://ns.medbiq.org/competencyframework/v1/':
+                results.append(self.check_fwk(c['uri'], force=force, update=update))
+            else:
+                results.append(self.check_comp(c['uri'], force=force, update=update))
+
+        if all(results):
+            if update:
+                fwk['completed'] = True
+                self.user.updateFwk(fwk)
+            return True
+
+        return False
 
 class XAPIWrapper(object):
     def __init__(self, lrsprofiles):
@@ -31,8 +85,9 @@ class XAPIWrapper(object):
         r = requests.get(url, params=payload, headers=self.getheaders(profile), verify=False)
         print "xci.competency.evaluation.XAPIWrapper.getstatements:: url: %s" % r.url
         if r.status_code == requests.codes.ok:
-            return (r.status_code, r.json())
-        return (r.status_code, r.text)
+            print r.json()
+            return (True, r.json())
+        return (False, r.text)
 
     def getdefaultprofile(self):
         for p in self.profiles:
