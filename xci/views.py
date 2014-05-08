@@ -302,7 +302,7 @@ def me_perfwks():
 def me():
     user = User(current_user.id)
     try:
-        ev = Evaluate(User("tom")).check_all()
+        ev = Evaluate(user).check_all()
     except NoLRSConfigured:
         pass
     user_comps = user.profile['competencies'].values()
@@ -630,7 +630,7 @@ def quiz():
         quiz_name = "adl_xci:%s" % urllib.quote_plus(comp['title'])
         display_name = comp['title'] + ' quiz'
        
-        wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name)
+        wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name, uri)
         score = 5 - wrong
 
         lrs_list = []
