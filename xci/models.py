@@ -185,6 +185,9 @@ class User(UserMixin):
     def updateComp(self, json_comp):
         self.profile['competencies'][str(hash(json_comp['uri']))] = json_comp
         self.save()
+        import pdb
+        pdb.set_trace()
+        updateUserFwkByURICompleted(self.email, json_comp['uri'], json_comp['completed'])
         print 'from update comp:: %s' % self.profile['competencies'][str(hash(json_comp['uri']))]
 
     # def getIncompleteComps(self):
@@ -594,7 +597,7 @@ def retrieve_statements(status, post_content, endpoint, headers):
         sens.append("{0} {1} {2}".format(jstmts[6]['actor']['name'], jstmts[6]['verb']['display']['en-US'], jstmts[6]['object']['definition']['name']['en-US']))
     return stmts, sens
 
-def get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name):
+def get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name, comp_uri):
     data = [
             {
                 'actor': actor,
@@ -618,7 +621,8 @@ def get_result_statements(responses, answers, types, questions, actor, actor_nam
                 'actor': actor,
                 'verb': {'id': 'http://adlnet.gov/expapi/verbs/passed', 'display':{'en-US': 'passed'}},
                 'object':{'id':quiz_name, 'definition':{'name':{'en-US':display_name}}},
-                'result':{'score':{'min': 0, 'max': 5, 'raw': 5 - wrong}}
+                'result':{'score':{'min': 0, 'max': 5, 'raw': 5 - wrong}},
+                'context':{'contextActivities':{'other':[{'id': comp_uri}]}}
                 })
     
     if wrong >= 2:
@@ -666,6 +670,25 @@ def updateUserFwkByURIQuiz(c_uri, data):
             h = str(hash(uri))
             set_field = 'compfwks.' + h + '.competencies'
             db.userprofiles.update({set_field:{'$elemMatch':{'uri':c_uri}}}, {'$set':{set_field + '.$.quiz': data}}, multi=True)
+
+
+# Updates all comps in fwks that are in the userprofiles
+def updateUserFwkByURICompleted(email, c_uri, completed):
+    import pdb
+    pdb.set_trace()
+    comp = db.competency.find_one({'uri': c_uri})
+    if not comp['type'] == 'commoncoreobject':
+        try:
+            parents = comp['relations']['childof']
+        except KeyError:
+            parents = []
+
+        # For each parent fwk the comp is in, update it in that userprofile
+        for uri in parents:
+            fwk = db.compfwk.find({'uri': uri})[0]
+            h = str(hash(uri))
+            set_field = 'compfwks.' + h + '.competencies'
+            db.userprofiles.update({"email": email, set_field:{'$elemMatch':{'uri':c_uri}}}, {'$set':{set_field + '.$.completed': completed}}, multi=True)
 
 
 # Admin reset functions

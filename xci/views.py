@@ -630,7 +630,7 @@ def quiz():
         quiz_name = "adl_xci:%s" % urllib.quote_plus(comp['title'])
         display_name = comp['title'] + ' quiz'
        
-        wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name)
+        wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name, uri)
         score = 5 - wrong
 
         lrs_list = []

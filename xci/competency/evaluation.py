@@ -11,20 +11,22 @@ class Evaluate(object):
         comps = self.user.getCompArray()
         for c in comps:
             self.check_comp(c['uri'], update=True)
-        
+
         compfwks = self.user.getCompfwkArray()
         for cf in compfwks:
             self.check_fwk(cf['uri'], update=True)
 
     def check_comp(self, uri, force=False, update=False):
-        if update:
+        comp = self.user.getComp(uri)
+        if not comp and update:
+            self.user.addComp(uri)
             comp = self.user.getComp(uri)
-            if not comp:
-                self.user.addComp(uri)
-                comp = self.user.getComp(uri)
+        if not comp:
+            return False
+
         if not force:
-            if self.user.getComp(uri).get('completed', False):
-                return True
+            return self.user.getComp(uri).get('completed', False)
+
         results = self.xapi.getstatements(
             agent=self.user.email, 
             verb='http://adlnet.gov/expapi/verbs/passed',
@@ -35,23 +37,22 @@ class Evaluate(object):
             if stmts:
                 if update:
                     comp['completed'] = True
-                    self.user.updateComp(comp)
-                return True
-        return False
+        self.user.updateComp(comp)
+        return comp.get('completed', False)
 
     def check_fwk(self, uri, force=False, update=False):
         fwk = self.user.getCompfwk(uri)
-        if update:
-            if not fwk:
-                self.user.addFwk(uri)
-                fwk = self.user.getCompfwk(uri)
-            else:
-                # fwk has to exist, if not , fail
-                return False
+
+        if not fwk and update:
+            self.user.addFwk(uri)
+            fwk = self.user.getCompfwk(uri)
+
+        if not fwk:
+            return False
 
         if not force:
-            if self.user.getCompfwk(uri).get('completed', False):
-                return True
+            return self.user.getCompfwk(uri).get('completed', False)
+                
         results = []
         for c in fwk.get('competencies', []):
             if c['type'] == 'http://ns.medbiq.org/competencyframework/v1/':
