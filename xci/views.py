@@ -301,7 +301,7 @@ def me_perfwks():
 def me():
     user = User(current_user.id)
     try:
-        ev = Evaluate(User("tom")).check_all()
+        ev = Evaluate(user).check_all()
     except NoLRSConfigured:
         pass
     user_comps = user.profile['competencies'].values()
