@@ -24,21 +24,29 @@ class Evaluate(object):
         if not comp:
             return False
 
-        if not force:
-            return self.user.getComp(uri).get('completed', False)
-
+        if self.has_completed(comp) and not force:
+            if update:
+                self.user.updateComp(comp)
+            return self.user.getComp(uri)['completed']
+        
         results = self.xapi.getstatements(
             agent=self.user.email, 
             verb='http://adlnet.gov/expapi/verbs/passed',
             activity=uri, related_activities=True)
-        
+
+        # import pdb
+        # pdb.set_trace()
+        completed = False
         if results[0]:
             stmts = results[1].get('statements', [])
             if stmts:
-                if update:
-                    comp['completed'] = True
-        self.user.updateComp(comp)
-        return comp.get('completed', False)
+                completed = True
+
+        if update:
+            comp['completed'] = completed
+            self.user.updateComp(comp)
+
+        return completed
 
     def check_fwk(self, uri, force=False, update=False):
         fwk = self.user.getCompfwk(uri)
@@ -50,23 +58,27 @@ class Evaluate(object):
         if not fwk:
             return False
 
-        if not force:
-            return self.user.getCompfwk(uri).get('completed', False)
-                
-        results = []
-        for c in fwk.get('competencies', []):
-            if c['type'] == 'http://ns.medbiq.org/competencyframework/v1/':
-                results.append(self.check_fwk(c['uri'], force=force, update=update))
-            else:
-                results.append(self.check_comp(c['uri'], force=force, update=update))
+        if force:
+            results = []
+            for c in fwk.get('competencies', []):
+                if c['type'] == 'http://ns.medbiq.org/competencyframework/v1/':
+                    results.append(self.check_fwk(c['uri'], force=force, update=update))
+                else:
+                    results.append(self.check_comp(c['uri'], force=force, update=update))
 
-        if all(results):
-            if update:
-                fwk['completed'] = True
-                self.user.updateFwk(fwk)
+            if all(results):
+                if update:
+                    fwk['completed'] = True
+
+        self.user.updateFwk(fwk)
+        return self.user.getCompfwk(uri).get('completed', False)
+
+    def has_completed(self, comp):
+        try:
+            comp['completed']
             return True
-
-        return False
+        except Exception, e:
+            return False
 
 class XAPIWrapper(object):
     def __init__(self, lrsprofiles):
@@ -84,9 +96,7 @@ class XAPIWrapper(object):
                             since, until, limit)
 
         r = requests.get(url, params=payload, headers=self.getheaders(profile), verify=False)
-        print "xci.competency.evaluation.XAPIWrapper.getstatements:: url: %s" % r.url
         if r.status_code == requests.codes.ok:
-            print r.json()
             return (True, r.json())
         return (False, r.text)
 
