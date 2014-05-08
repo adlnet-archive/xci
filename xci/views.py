@@ -3,6 +3,7 @@ import json
 import models
 import requests
 import os
+import urllib
 from urlparse import urlparse
 from itertools import imap
 from operator import itemgetter
@@ -394,7 +395,7 @@ def update_endpoint():
             profile['endpoint'] = sf['endpoint']
             profile['username'] = sf['auth']
             profile['password'] = sf['password']
-            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['auth'], profile['password']))
+            profile['auth'] = "Basic %s" % base64.b64encode("%s:%s" % (profile['username'], profile['password']))
             profile['default'] = default
         elif not profile['name'] == sf['name'] and default:
             profile['default'] = False
@@ -589,6 +590,67 @@ def edit_comp(objid):
             return redirect(url_for('competencies', uri=f.uri.data))
         return_dict = {'cform': f}
     return render_template('edit-comp.html', **return_dict)
+
+@app.route('/admin/competency/add_quiz/<objid>', methods=['GET', 'POST'])
+@check_admin
+def add_quiz_to_comp(objid):
+    user = User(current_user.id)
+    comp = models.getCompetencyById(objid)
+
+    if request.method == 'GET':
+        return render_template('add_quiz.html', objid=objid)
+    else:
+        data = models.create_questions(request.form)
+        models.addCompetencyQuiz(objid, data)
+        return redirect(url_for('competencies', uri=comp['uri']))
+     
+@app.route('/competency/quiz', methods=['GET', 'POST'])
+def quiz():
+    uri = request.args.get('uri', None)
+    user = User(current_user.id)
+    comp = models.getCompetency(uri)
+
+
+    if request.method == 'GET':
+        return render_template('quiz.html', uri=uri, title=comp['title'], data=comp['quiz'])
+    else:    
+        questions = []
+        answers = []
+        types = []
+        responses = []
+
+        for x in range(1,6):
+            questions.append(request.form.get('questionasked' + str(x)))
+            answers.append(request.form.get('answer' + str(x)))
+            types.append(request.form.get('type' + str(x)))
+            responses.append(request.form.get('question' + str(x)))
+
+        actor = user.getFullAgent()
+        actor_name = "%s %s" % (user.first_name, user.last_name)
+        quiz_name = "adl_xci:%s" % urllib.quote_plus(comp['title'])
+        display_name = comp['title'] + ' quiz'
+       
+        wrong, data = models.get_result_statements(responses, answers, types, questions, actor, actor_name, quiz_name, display_name)
+        score = 5 - wrong
+
+        lrs_list = []
+        for prof in user.profile['lrsprofiles']:
+            lrs_result_info = {'name': prof['name']}
+            headers = {
+                    'Authorization': prof['auth'],
+                    'content-type': 'application/json',        
+                    'X-Experience-API-Version': '1.0.0'
+            }
+
+            post_resp = requests.post(prof['endpoint'] + "statements", data=json.dumps(data), headers=headers, verify=False)
+            lrs_result_info['status'] = post_resp.status_code
+            lrs_result_info['content'] = post_resp.content
+
+            lrs_result_info['stmts'], lrs_result_info['sens'] = models.retrieve_statements(lrs_result_info['status'],
+                lrs_result_info['content'], prof['endpoint'] + "statements", headers)    
+            lrs_list.append(lrs_result_info)
+
+        return render_template('quiz_results.html', title=comp['title'], uri=comp['uri'], score=score, lrs_list=lrs_list)
 
 # Search all competencies added to system right now
 @app.route('/compsearch', methods=['GET', 'POST'])
