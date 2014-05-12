@@ -10,11 +10,11 @@ class Evaluate(object):
     def check_all(self):
         comps = self.user.getCompArray()
         for c in comps:
-            self.check_comp(c['uri'], update=True)
+            self.check_comp(c['uri'], update=True, force=True)
 
         compfwks = self.user.getCompfwkArray()
         for cf in compfwks:
-            self.check_fwk(cf['uri'], update=True)
+            self.check_fwk(cf['uri'], update=True, force=True)
 
     def check_comp(self, uri, force=False, update=False):
         comp = self.user.getComp(uri)
@@ -34,8 +34,6 @@ class Evaluate(object):
             verb='http://adlnet.gov/expapi/verbs/passed',
             activity=uri, related_activities=True)
 
-        # import pdb
-        # pdb.set_trace()
         completed = False
         if results[0]:
             stmts = results[1].get('statements', [])

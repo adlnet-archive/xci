@@ -8,7 +8,7 @@
     {% if comp.type != "http://ns.medbiq.org/competencyobject/v1/}CompetencyObject" %}
          <a href="{{ url_for('competencies', uri=comp.uri, mb=true) }}">View as MedBiq Competency</a>
     {% endif %}
-    {% if 'quiz' in comp %}
+    {% if 'quiz' in comp and 'completed' in comp and comp.completed == False %}
     <a href="{{ url_for('quiz', uri=comp.uri) }}" class="btn btn-primary" role="button">Take Quiz</a>
     {% endif %}
 </p>
