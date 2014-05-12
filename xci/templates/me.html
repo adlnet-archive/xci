@@ -53,7 +53,7 @@
     <h4>Competencies</h4>
     {% for comp in comps %}
     <div class="col-xs-12">
-        {% if comp.met %}
+        {% if comp.completed %}
             <div class="panel panel-success">
                 <div class="panel-heading">
                     <h3 class="panel-title"><a href="{{ url_for('me_competencies') }}?uri={{ comp.uri }}">{{ comp.title }}</a></h3>
@@ -101,7 +101,7 @@
     <h4>Competency Frameworks</h4>
     {% for cfwk in fwks %}
     <div class="col-xs-12">
-        {% if cfwk.met %}
+        {% if cfwk.completed %}
         <div class="panel panel-success">
         {% else %}
         <div class="panel panel-default">
@@ -129,7 +129,7 @@
     <h4>Performance Frameworks</h4>
     {% for pfwk in pfwks %}
     <div class="col-xs-12">
-        {% if pfwk.met %}
+        {% if pfwk.completed %}
         <div class="panel panel-success">
         {% else %}
         <div class="panel panel-default">

@@ -49,8 +49,6 @@ def parseComp(uri):
 # parse medbiq xml, xmlbit is the ET.XML obj of the comp doc, parentURI used for fwks 
 # when this parse is recursively called to parse children
 def parseMedBiqCompXML(xmlbit, parentURI=None):
-    # import pdb
-    # pdb.set_trace()
     obj = {}
     obj['type'] = MB_COMP_FWK_TYPE if 'CompetencyFramework' in xmlbit.tag else MB_COMP_TYPE
     obj['uri'] = getEntry(xmlbit)

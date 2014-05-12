@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="jumbotron">
+		<h2>Results</h2>
+    	<p> Thanks for taking the quiz!! You scored {{score}} out of 5</p>
+        {% if score > 3 %}
+    	<p style="color:green">Congratulations! You passed the quiz!</p>
+        {% else %}
+    	<p style="color:red">Sorry, you failed the quiz. Study harder next time</p>
+        {% endif %}
+        {% for lrs in lrs_list %}
+        {% if lrs.status != 200 %}
+        <p>Something went wrong with POSTing the quiz results to {{ lrs.name }}</p>
+        <p>{{ lrs.status }} - {{ lrs.content }}</p>
+        {% else %}
+        <h2>{{ lrs.name }}</h2>
+		<div class="panel-group" id="{{'accordion' + lrs.name}}">
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseOne' + lrs.name}}">{{ lrs.sens[0] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseOne' + lrs.name}}" class="panel-collapse collapse in">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[0]|safe }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseTwo' + lrs.name}}">{{ lrs.sens[1] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseTwo' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[1] }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseThree' + lrs.name}}">{{ lrs.sens[2] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseThree' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[2] }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseFour' + lrs.name}}">{{ lrs.sens[3] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseFour' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[3] }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseFive' + lrs.name}}">{{ lrs.sens[4] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseFive' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[4] }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseSix' + lrs.name}}">{{ lrs.sens[5] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseSix' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body">
+		      <pre>{{ lrs.stmts[5] }}</pre>
+		      </div>
+		    </div>
+		  </div>
+		  <div class="panel panel-default">
+		    <div class="panel-heading">
+		      <h4 class="panel-title">
+		        <a data-toggle="collapse" data-parent="{{'#accordion' + lrs.name}}" href="{{'#collapseSeven' + lrs.name}}" id="sen7">{{ lrs.sens[6] }}</a>
+		      </h4>
+		    </div>
+		    <div id="{{'collapseSeven' + lrs.name}}" class="panel-collapse collapse">
+		      <div class="panel-body" id="st7">
+		      <pre>{{ lrs.stmts[6] }}</pre>				        
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		<br>
+		{% endif %}
+		{% endfor %}
+</div>
+{% endblock %}
