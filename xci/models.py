@@ -185,13 +185,17 @@ class User(UserMixin):
     def updateComp(self, json_comp):
         self.profile['competencies'][str(hash(json_comp['uri']))] = json_comp
         self.save()
-        import pdb
-        pdb.set_trace()
-        updateUserFwkByURICompleted(self.email, json_comp['uri'], json_comp['completed'])
-        print 'from update comp:: %s' % self.profile['competencies'][str(hash(json_comp['uri']))]
+        for fwk in self.profile['compfwks'].values():
+            self.updateFwkCompsWithCompletedVal(fwk, json_comp['uri'], json_comp['completed'])
 
-    # def getIncompleteComps(self):
-    #     return db.
+    def updateFwkCompsWithCompletedVal(self, fwk, uri, completed):
+        for c in fwk['competencies']: 
+            if c['type'] != 'http://ns.medbiq.org/competencyframework/v1/':
+                if c['uri'] == uri:
+                    c['completed'] = completed
+            else:
+                self.updateFwkCompsWithCompletedVal(c, uri, completed)
+        self.save()
     
     def getCompfwk(self, uri):
         return self.profile['compfwks'][str(hash(uri))]
@@ -199,7 +203,6 @@ class User(UserMixin):
     def updateFwk(self, json_comp):
         self.profile['compfwks'][str(hash(json_comp['uri']))] = json_comp
         self.save()
-        print 'from update fwk:: %s' % self.profile['compfwks'][str(hash(json_comp['uri']))]
 
     def getCompfwkArray(self):
         return self.profile['compfwks'].values()
@@ -670,25 +673,6 @@ def updateUserFwkByURIQuiz(c_uri, data):
             h = str(hash(uri))
             set_field = 'compfwks.' + h + '.competencies'
             db.userprofiles.update({set_field:{'$elemMatch':{'uri':c_uri}}}, {'$set':{set_field + '.$.quiz': data}}, multi=True)
-
-
-# Updates all comps in fwks that are in the userprofiles
-def updateUserFwkByURICompleted(email, c_uri, completed):
-    import pdb
-    pdb.set_trace()
-    comp = db.competency.find_one({'uri': c_uri})
-    if not comp['type'] == 'commoncoreobject':
-        try:
-            parents = comp['relations']['childof']
-        except KeyError:
-            parents = []
-
-        # For each parent fwk the comp is in, update it in that userprofile
-        for uri in parents:
-            fwk = db.compfwk.find({'uri': uri})[0]
-            h = str(hash(uri))
-            set_field = 'compfwks.' + h + '.competencies'
-            db.userprofiles.update({"email": email, set_field:{'$elemMatch':{'uri':c_uri}}}, {'$set':{set_field + '.$.completed': completed}}, multi=True)
 
 
 # Admin reset functions
