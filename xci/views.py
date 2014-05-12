@@ -649,7 +649,8 @@ def quiz():
             lrs_result_info['stmts'], lrs_result_info['sens'] = models.retrieve_statements(lrs_result_info['status'],
                 lrs_result_info['content'], prof['endpoint'] + "statements", headers)    
             lrs_list.append(lrs_result_info)
-
+        import pdb
+        pdb.set_trace()
         return render_template('quiz_results.html', title=comp['title'], uri=comp['uri'], score=score, lrs_list=lrs_list)
 
 # Search all competencies added to system right now
