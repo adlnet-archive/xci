@@ -8,6 +8,7 @@ xci
 Software Installation
 
 	sudo apt-get install build-essential python-dev python-virtualenv mongodb git
+	sudo apt-get install libxml2-dev libxslt-dev python-dev zlib1g-dev
 	sudo easy_install pip
 	sudo pip install virtualenv
 
