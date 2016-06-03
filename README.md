@@ -1,7 +1,7 @@
 xci
 ===
 
-#### Merging the xAPI, Learning Registry and Medbiquitous competency and performance frameworks. Tested with Ubuntu 12.04.3 and Python 2.7.3
+Merging the xAPI, Learning Registry and Medbiquitous competency and performance frameworks. Tested with Ubuntu 12.04.3 and Python 2.7.3
 
 # Installation
 
@@ -56,6 +56,9 @@ You will probably want to test this out first at the [LR sandbox](https://node01
 Common Core took down the xml versions of their competencies. The app will try to load the xml if it exists on the file system.
 
 To do this, download the cc zip [here](http://www.corestandards.org/wp-content/uploads/ccssi.zip). Extract and save one level above the project (at the same level as the env folder).
+
+## Contributing to the project
+We welcome contributions to this project. Fork this repository, make changes, and submit pull requests. If you're not comfortable with editing the code, please [submit an issue](https://github.com/adlnet/xAPIWrapper/issues) and we'll be happy to address it. 
 
 ## License
    Copyright &copy;2016 Advanced Distributed Learning
