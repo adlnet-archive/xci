@@ -58,7 +58,7 @@ Common Core took down the xml versions of their competencies. The app will try t
 To do this, download the cc zip [here](http://www.corestandards.org/wp-content/uploads/ccssi.zip). Extract and save one level above the project (at the same level as the env folder).
 
 ## Contributing to the project
-We welcome contributions to this project. Fork this repository, make changes, and submit pull requests. If you're not comfortable with editing the code, please [submit an issue](https://github.com/adlnet/xAPIWrapper/issues) and we'll be happy to address it. 
+We welcome contributions to this project. Fork this repository, make changes, and submit pull requests. If you're not comfortable with editing the code, please [submit an issue](https://github.com/adlnet/xci/issues) and we'll be happy to address it. 
 
 ## License
    Copyright &copy;2016 Advanced Distributed Learning
